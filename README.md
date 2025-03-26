@@ -174,7 +174,7 @@ The contest organizers will execute each team's submission across the twenty wit
 3) Throughput measured as output tokens / second  
 4) Amount of model written in NKI (measured as NKI FLOPS / total model FLOPS) (will be applied as a scaling factor for (b) and (c)). Note: NKI FLOPs measures the number of multiply-accumulate (MAC) operations.
 
-Rankings will be established by calculating the total normalized number of points per team, where points are normalized against the best submitted solution.
+Rankings will be established by calculating the total normalized number of points per team, where points are normalized against the baseline.
 
 We define **points** as **Accuracy** (binary) **\* Reduced Latency \* Increased Throughput \* (1 + Normalized NKI FLOPS)**, where:
 
