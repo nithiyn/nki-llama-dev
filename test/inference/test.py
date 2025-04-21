@@ -19,11 +19,11 @@ def parse_prompt_data(filepath):
 
 
 def main():
-    prompts = parse_prompts("prompts.txt")
-    prompt_data = parse_prompt_data("prompt_data.txt")
+    prompts = parse_prompts("data/prompts.txt")
+    prompt_data = parse_prompt_data("data/prompt_data.txt")
     assert len(prompts) == len(prompt_data)
 
-    mode = "evaluate"
+    mode = "evaluate_all"
 
     # Iterate through the prompts
     for i, prompt in enumerate(prompts):
@@ -31,8 +31,8 @@ def main():
         seq_len = data[2]
         latency = data[3]
         throughput = data[4]
-
-        command = f'python main.py --enable-nki --mode {mode} --seq-len {seq_len} --base-latency {latency} --base-throughput {throughput} --prompt "{prompt}"'
+ 
+        command = f'python src/inference/main.py --enable-nki --mode {mode} --seq-len {seq_len} --base-latency {latency} --base-throughput {throughput} --prompt "{prompt}"'
         print(command)
         
         with open(f'prompt{i}_out.txt', 'w') as outfile:

@@ -41,9 +41,9 @@ def parse_args():
     parser.add_argument("--base-throughput", type=float, default=134.61)
 
     # Model path
-    parser.add_argument("--model-path", type=str, default="/home/ubuntu/models/llama-3.2-1b/")
+    parser.add_argument("--model-path", type=str, default="~/models/llama-3.2-3b-instruct/")
     parser.add_argument("--compiled-model-path", type=str,
-                        default="/home/ubuntu/traced_model/llama-3.2-1b/")
+                        default="~/traced_model/llama-3.2-3b-instruct/")
 
     # Evaluation
     parser.add_argument("--benchmark", action="store_true")
@@ -103,6 +103,21 @@ def parse_args():
 
     return parser.parse_args()
 
+def parse_prompts(filepath):
+    with open(filepath, 'r') as file:
+        arr = file.read().split('\n\n')
+    arr = [prompt.strip() for prompt in arr if prompt.strip()]
+    return arr
+
+
+def parse_prompt_data(filepath):
+    with open(filepath, 'r') as file:
+        content = file.read()
+
+    blocks = content.split('\n')
+    if blocks[-1] == '':
+        blocks = blocks[0:-1]
+    return [block.split(',') for block in blocks]
 
 def validate_file_exists(path):
     if not os.path.exists(path) or not os.path.isfile(path):
@@ -573,8 +588,8 @@ def main():
         
     elif args.mode == "evaluate_all":
 
-        prompts = parse_prompts("prompts.txt")
-        prompt_data = parse_prompt_data("prompt_data.txt")
+        prompts = parse_prompts("data/prompts.txt")
+        prompt_data = parse_prompt_data("data/prompt_data.txt")
         assert len(prompts) == len(prompt_data)
 
         total_score = 0
