@@ -5,6 +5,7 @@
 
 # Variables
 PYTHON = python
+REPOSITORY_PATH = ~/nki-llama
 MAIN_SCRIPT = src/inference/main.py
 TEST_SCRIPT = test/inference/test.py
 LOCAL_VENV = venv/bin/activate
@@ -186,8 +187,8 @@ infer: check-neuron-venv check-model-name
 # Run inference in evaluate_all mode
 .PHONY: evaluate
 evaluate: check-neuron-venv check-model-name
-	@echo "Running inference in evaluate_all mode with model: $(MODEL_NAME)"
-	$(PYTHON) $(TEST_SCRIPT)
+	@echo "Running inference in evaluate_single mode with model: $(MODEL_NAME)"
+	cd ~ && $(PYTHON) $(REPOSITORY_PATH)/$(TEST_SCRIPT) --repository-path $(REPOSITORY_PATH)
 
 # Clean generated files
 .PHONY: clean

@@ -82,7 +82,7 @@ The Makefile provides several commands for running inference and evaluation:
 # Environment variables will be loaded from .env automatically
 make infer
 
-# Run in evaluate_all mode
+# Run in evaluate_single mode
 make evaluate
 ```
 

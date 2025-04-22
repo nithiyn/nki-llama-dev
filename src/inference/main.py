@@ -139,6 +139,8 @@ def prepare_inference(model_cls, args):
     # Skip values not specified in the args to avoid setting values to None in the config.
     config_kwargs = copy.deepcopy(vars(args))
     config_kwargs = {k: v for k, v in config_kwargs.items() if v is not None}
+    
+    args.model_path = '/'.join(args.model_path.split('/')[-3:])
 
     if args.on_device_sampling:
         config_kwargs["on_device_sampling_config"] = OnDeviceSamplingConfig(**config_kwargs)
