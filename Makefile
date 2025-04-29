@@ -163,7 +163,7 @@ download: check-neuron-venv
 .PHONY: start-server
 start-server: check-neuron-venv check-vllm check-model-name
 	@echo "Starting vLLM OpenAI-compatible API server with model: $(MODELS_DIR)/$(MODEL_NAME)"
-	cd ~ && VLLM_NEURON_FRAMEWORK='neuronx-distributed-inference' python -m vllm.entrypoints.openai.api_server \
+	cd ~ && VLLM_NEURON_FRAMEWORK='neuronx-distributed-inference' NEURON_COMPILED_ARTIFACTS='$(COMPILED_MODEL_DIR)/$(MODEL_NAME)' python -m vllm.entrypoints.openai.api_server \
 		--model="models/$(MODEL_NAME)" \
 		--max-num-seqs=4 \
 		--max-model-len=$(MAX_MODEL_LEN) \
