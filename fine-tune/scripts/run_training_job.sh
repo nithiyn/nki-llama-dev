@@ -2,7 +2,9 @@
 set -e
 
 cd ~/neuronx-distributed-training/examples
-export CONF_FILE=hf_llama3_8B_SFT_lora_config
+# Point to our config path and file
+export CONF_FILE_PATH="/home/ubuntu/nki-llama/fine-tune/configs/YAML/${CONF_FILE}.yaml"
+export CONF_FILE=hf_llama3.1_8B_SFT_lora_config
 export COMPILE=0
 
 bash train.sh
