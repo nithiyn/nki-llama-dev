@@ -39,7 +39,7 @@ model: check-neuron-venv
 
 convert_ckpt: check-neuron-venv
 	@echo "==> Converting checkpoint to NxDT format"
-	bash scripts/convert_checkpoint.sh
+	bash scripts/convert_checkpoints.sh
 
 precompile: check-neuron-venv
 	@echo "==> Pre-compiling graphs (AOT)"
@@ -47,7 +47,7 @@ precompile: check-neuron-venv
 
 train: check-neuron-venv
 	@echo "==> Running fine-tuning job"
-	bash scripts/train.sh
+	bash scripts/run_training.sh
 
 #tensorboard: check-neuron-venv
 #	@echo "==> Launching TensorBoard on port 6006"
