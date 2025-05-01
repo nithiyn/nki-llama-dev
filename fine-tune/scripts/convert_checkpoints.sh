@@ -8,7 +8,7 @@ cd ~/nki-llama/fine-tune/neuronx-distributed-training/examples/checkpoint_conver
 # Use NxDT’s checkpoint converter to produce sharded NxDT checkpoint
 export PCKPT_MODEL_DIR="~/nki-llama/fine-tune/model_assets/converted_hf_style_hf_to_nxdt_tp8pp4/"
 export MODEL_CONFIG="~/nki-llama/fine-tune/configs/model-config/config.json"
-
+export BIN_MODEL_DIR=~/nki-llama/fine-tune/model_assets/llama3-8B_hf_weights_bin
 python3 checkpoint_converter.py \
     --model_style             hf \
     --hw_backend              trn1 \
