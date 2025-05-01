@@ -7,6 +7,8 @@ set -e
 # 2. Upgrade pip, neuron packages active cause venv enabled, cython error - ensure instaled
 pip install -U pip
 pip install Cython
+pip install --upgrade setuptools
+
 
 # 3. Build a slim CPU-only Apex (NeMo dependency)
 git clone https://github.com/NVIDIA/apex.git apex
@@ -42,7 +44,7 @@ pip install packaging wheel
 python setup.py bdist_wheel
 
 # Copy out the generated wheel path for later
-APEX_WHEEL=$(ls dist/apex-*.whl | head -1)
+APEX_WHEEL=$(ls ~/apex/dist/apex-*.whl | head -1)
 
 # 3c. Return to root of our example
 cd ..
