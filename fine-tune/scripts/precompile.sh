@@ -6,6 +6,9 @@ set -e
 git clone https://github.com/aws-neuron/neuronx-distributed-training.git
 cd neuronx-distributed-training
 
+# instll Cython - common issue
+pip install Cython 
+
 # 2. Create & apply the diff
 cat << 'EOF' > train-conf-file-path.patch
 *** Begin Patch
@@ -29,7 +32,7 @@ echo "✓ examples/train.sh patched to allow CONF_FILE_PATH override"
 
 cd neuronx-distributed-training
 # Point to our config path and file
-export CONF_FILE=hf_llama3.1_8B_SFT_lora_config
+export CONF_FILE_PATH="/home/ubuntu/nki-llama/fine-tune/configs/YAML/"
 export CONF_FILE=hf_llama3_8B_SFT_lora_config
 export COMPILE=1
 
