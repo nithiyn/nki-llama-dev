@@ -7,3 +7,4 @@ cd $EXP_DIR
 
 # Launch TensorBoard
 tensorboard --logdir . --port 6006
+~/neuronx-distributed-training/examples/nemo_experiments/hf_llama3_8B/

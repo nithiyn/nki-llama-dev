@@ -3,9 +3,7 @@
 set -e
 
 # 1. Clone and cd into the repo
-cd
-git clone https://github.com/aws-neuron/neuronx-distributed-training.git
-cd neuronx-distributed-training
+cd ~/nki-llama/fine-tune/neuronx-distributed-training
 
 # 2. Create & apply the diff
 cat << 'EOF' > train-conf-file-path.patch
