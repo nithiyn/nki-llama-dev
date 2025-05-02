@@ -30,7 +30,13 @@
    # Edit .env file with your preferred settings
    nano .env
    ```
+4. train.sh
 
+```bash
+#!/usr/bin/env bash
+copy your config into examples dir
+
+```
 ## Environment Configuration
 
 The repository includes a `.env.example` file with template configuration. Copy this file to create your own `.env`:
