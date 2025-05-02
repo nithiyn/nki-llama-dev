@@ -3,7 +3,7 @@ import os
 import torch
 
 # Directory containing shards, and final output path
-bin_dir    = "~/nki-llama/fine-tune/model_assets/llama3-8B_hf_weights_bin"
+bin_dir    = "/nki-llama/fine-tune/model_assets/llama3-8B_hf_weights_bin"
 output_bin = "~/nki-llama/fine-tune/model_assets/pckpt/pytorch_model.bin"
 
 # We’ll merge everything into this dict
