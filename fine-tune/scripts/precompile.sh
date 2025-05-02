@@ -15,11 +15,8 @@ cat << 'EOF' > train-conf-file-path.patch
 *** End Patch
 EOF
 
-# 3a. If you have 'patch':
-patch -p1 < train-conf-file-path.patch
-
 # 3b. Or if you prefer 'git apply':
-# git apply train-conf-file-path.patch
+git apply train-conf-file-path.patch
 
 rm train-conf-file-path.patch
 
