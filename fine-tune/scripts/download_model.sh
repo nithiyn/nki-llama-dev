@@ -31,3 +31,6 @@ python ~/nki-llama/fine-tune/scripts/convert_safetensors.py \
     --input_dir  "${MODEL_DIR}" \
     --output_dir "${BIN_MODEL_DIR}"
 
+# 3. needs to be one .bin file
+python ~/nki-llama/fine-tune/scripts/merge_checkpoints.py
+
