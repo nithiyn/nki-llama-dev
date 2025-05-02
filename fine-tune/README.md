@@ -34,7 +34,9 @@
 
 ```bash
 #!/usr/bin/env bash
-copy your config into examples dir
+#copy your config into examples dir
+cp -v /home/ubuntu/nki-llama/fine-tune/configs/YAML/*.yaml \
+      ~/nki-llama/fine-tune/neuronx-distributed-training/examples/conf/
 
 ```
 ## Environment Configuration
