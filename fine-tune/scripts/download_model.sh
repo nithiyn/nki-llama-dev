@@ -8,9 +8,9 @@ cd ~/nki-llama/fine-tune
 export TOKENIZER_DIR=~/nki-llama/fine-tune/model_assets/llama_tokenizer
 export MODEL_DIR=~/nki-llama/fine-tune/model_assets/llama_3-1_8b
 export BIN_MODEL_DIR=~/nki-llama/fine-tune/model_assets/llama3-8B_hf_weights_bin
-
+export CONSOLIDATED_BIN_MODEL_DIR=~nki-llama/fine-tune/model_assets/pckpt/
 # Create the output directories if needed
-mkdir -p "${TOKENIZER_DIR}" "${MODEL_DIR}" "${BIN_MODEL_DIR}"
+mkdir -p "${TOKENIZER_DIR}" "${MODEL_DIR}" "${BIN_MODEL_DIR}" "${CONSOLIDATED_BIN_MODEL_DIR}"
 
 # 1. Download from Hugging Face via Python (so we can save in HF style)
 python - <<'PYCODE'
