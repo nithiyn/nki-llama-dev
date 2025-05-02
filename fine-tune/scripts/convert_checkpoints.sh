@@ -2,7 +2,7 @@
 set -e
 
 cd ~/nki-llama/fine-tune/
-if [ -d "/home/ubuntu/nki-llama/fine-tune/neuronx-distributed-training"]; then
+if [ -d "/home/ubuntu/nki-llama/fine-tune/neuronx-distributed-training" ]; then
     echo "NxDT already cloned. Skipping."
 else
     git clone https://github.com/aws-neuron/neuronx-distributed-training.git
@@ -16,7 +16,7 @@ python3 checkpoint_converter.py \
     --model_style             hf \
     --hw_backend              trn1 \
     --input_dir               $CONSOLIDATED_BIN_MODEL_DIR \
-    --output_dir              $PCKPT_MODEL_DIR \
+    --output_dir              $NXDT_MODEL_DIR \
     --save_xser               True \
     --config                  $MODEL_CONFIG \
     --tp_size                 32 \
