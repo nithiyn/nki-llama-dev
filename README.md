@@ -15,23 +15,24 @@ A unified project for fine-tuning, inference, and agent development of Llama mod
 
 This project follows a three-stage workflow:
 1. **Fine-tune** a model using Neuron hardware with NxD
-2. **Inference** using the fine-tuned model with vLLM
+2. **Inference** using the fine-tuned model with vLLM, NKI compilation, and NxDI (Neuron Distributed Inference)
 3. **Agent Development** using LangChain/LangGraph connected to your model
 
 ## Technical Infrastructure
 
 ### Compute Resources
-- **Required Instance**: trn1.2xlarge
+- **Required Instance**: trn1.32xlarge
 - **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04)
 - **Base Packages**:
   - NxD (NeuronX Distributed Training)
   - NKI (Neuron Kernel Interface)
+  - NxDI (Neuron Distributed Inference)
 
 ## Project Structure
 
 This repository contains three main components:
 - **Fine-tuning**: Tools for fine-tuning LLMs on Neuron hardware using NxD
-- **Inference**: Infrastructure for efficient inference using vLLM
+- **Inference**: Infrastructure for efficient inference using vLLM with NKI compilation and NxDI optimization
 - **Agent Development**: Building intelligent agents with LangChain/LangGraph
 
 ## Setup Steps
@@ -39,7 +40,7 @@ This repository contains three main components:
 1. Create a Trainium instance with AWS Neuron SDK v2.21 using EC2 with the following settings:
     1. **Name:** nki-llama
     2. **AMI:** Deep Learning AMI Neuron (Ubuntu 22.04)
-    3. **Instance type:** trn1.2xlarge
+    3. **Instance type:** trn1.32xlarge
     4. **Key pair (login):** create a new key pair
     5. When connecting to these instances via SSH, use the username of *ubuntu*.
 
@@ -106,6 +107,8 @@ make finetune-train
 
 ## Inference Workflow
 
+The inference pipeline includes NKI (Neuron Kernel Interface) compilation and NxDI (Neuron Distributed Inference) integration with vLLM for optimal performance on Neuron hardware.
+
 Use our Makefile to simplify the setup and execution process for inference:
 
 ```bash
@@ -119,7 +122,10 @@ make inference-setup
 # (skip this step if using your fine-tuned model)
 make inference-download
 
-# Start the vLLM OpenAI-compatible API server
+# The model will be automatically compiled with NKI and optimized for NxDI
+# when the server starts for the first time
+
+# Start the vLLM OpenAI-compatible API server with NxDI
 make inference-server
 ```
 
@@ -130,6 +136,9 @@ The repository includes a `.env.example` file with template configuration. Copy 
 ```
 # Model configuration
 MODEL_NAME=llama-3.2-3b-instruct
+
+# Compiled model directory for NKI artifacts
+COMPILED_MODEL_DIR=~/traced_model
 
 # Server configuration
 PORT=8080
@@ -224,6 +233,9 @@ Here's a complete workflow example combining all components:
    make inference-setup
    # You can either use your fine-tuned model or download one
    # make inference-download
+   
+   # The model will be compiled with NKI and optimized for NxDI
+   # when you first start the server (this may take a few minutes)
    make inference-server
    ```
 
