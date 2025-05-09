@@ -3,9 +3,8 @@
 -include .env
 
 SHELL := /bin/bash
-#VENV_ACTIVATE := source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
 
-.PHONY: all deps data model convert_ckpt precompile train tensorboard clean
+.PHONY: all deps data model convert_ckpt precompile train clean
 all: deps data model convert_ckpt precompile train
 # Check if in Neuron virtual environment
 .PHONY: check-neuron-venv
@@ -48,10 +47,6 @@ precompile: check-neuron-venv
 train: check-neuron-venv
 	@echo "==> Running fine-tuning job"
 	bash scripts/run_training.sh
-
-#tensorboard: check-neuron-venv
-#	@echo "==> Launching TensorBoard on port 6006"
-#	bash scripts/tensorboard.sh
 
 clean: check-neuron-venv
 	rm -rf dataset llama3_tokenizer llama3-8B_hf_weights pretrained_ckpt nemo_experiments

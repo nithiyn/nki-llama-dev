@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-DATA_DIR=~/nki-llama/fine-tune/datasets/llama3-1_8B
+DATA_DIR=~/nki-llama/src/fine-tune/datasets/llama3-1_8B
 export DATA_DIR
 
 mkdir -p ${DATA_DIR} && cd ${DATA_DIR}

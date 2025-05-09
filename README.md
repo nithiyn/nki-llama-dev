@@ -1,5 +1,23 @@
 # NKI Llama
 
+A unified project for fine-tuning, inference, and agent development of Llama models on AWS Neuron hardware.
+
+## Project Workflow
+
+```
+┌────────────────┐     ┌────────────────┐     ┌────────────────┐
+│                │     │                │     │                │
+│   Fine-tune    │────▶│   Inference    │────▶│     Agent      │
+│                │     │                │     │  Development   │
+│                │     │                │     │                │
+└────────────────┘     └────────────────┘     └────────────────┘
+```
+
+This project follows a three-stage workflow:
+1. **Fine-tune** a model using Neuron hardware with NxD
+2. **Inference** using the fine-tuned model with vLLM
+3. **Agent Development** using LangChain/LangGraph connected to your model
+
 ## Technical Infrastructure
 
 ### Compute Resources
@@ -8,6 +26,13 @@
 - **Base Packages**:
   - NxD (NeuronX Distributed Training)
   - NKI (Neuron Kernel Interface)
+
+## Project Structure
+
+This repository contains three main components:
+- **Fine-tuning**: Tools for fine-tuning LLMs on Neuron hardware using NxD
+- **Inference**: Infrastructure for efficient inference using vLLM
+- **Agent Development**: Building intelligent agents with LangChain/LangGraph
 
 ## Setup Steps
 
@@ -31,34 +56,74 @@
    nano .env
    ```
 
-4. Use our Makefile to simplify the setup and execution process for building agents and applications over neuron:
-   
+## Environment Setup
+
+This project requires three different Python environments:
+
+1. **Fine-tuning Environment**:
    ```bash
-   # First, activate the AWS Neuron environment
-   source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
-   
-   # Setup vLLM for Neuron
-   make setup-vllm
-   
-   # Download the model from Hugging Face (you'll need a HF token)
-   make download
-   
-   # Create a Python virtual environment and setup Jupyter (in a new terminal)
-   # First create and activate the virtual environment
-   python3 -m venv venv
-   source venv/bin/activate
-   
-   # Then run the Jupyter setup target
-   make setup-jupyter
-   
-   # Start the vLLM OpenAI-compatible API server (in first terminal with Neuron environment)
-   make start-server
-   
-   # Start Jupyter Lab (in second terminal with the venv environment)
-   make jupyter
+   source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
    ```
 
-## Environment Configuration
+2. **Inference Environment**:
+   ```bash
+   source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+   ```
+
+3. **Jupyter Environment** (for agent development):
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   make inference-jupyter  # Sets up Jupyter and installs required packages
+   ```
+
+## Fine-tuning Workflow
+
+Our Makefile simplifies the fine-tuning process:
+
+```bash
+# Activate the fine-tuning environment
+source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+
+# Install dependencies
+make finetune-deps
+
+# Download dataset
+make finetune-data
+
+# Download model
+make finetune-model
+
+# Convert checkpoint to NxDT format
+make finetune-convert
+
+# Pre-compile graphs (AOT)
+make finetune-precompile
+
+# Run fine-tuning job
+make finetune-train
+```
+
+## Inference Workflow
+
+Use our Makefile to simplify the setup and execution process for inference:
+
+```bash
+# Activate the inference environment
+source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+
+# Setup vLLM for Neuron
+make inference-setup
+
+# Download model from Hugging Face (you'll need a HF token)
+# (skip this step if using your fine-tuned model)
+make inference-download
+
+# Start the vLLM OpenAI-compatible API server
+make inference-server
+```
+
+### Environment Configuration
 
 The repository includes a `.env.example` file with template configuration. Copy this file to create your own `.env`:
 
@@ -74,16 +139,16 @@ TENSOR_PARALLEL_SIZE=8
 
 The Makefile will automatically load this configuration if present, or prompt you for values if not set.
 
-## Running Inference
+### Running Inference
 
 The Makefile provides several commands for running inference and evaluation:
 
 ```bash
-# Environment variables will be loaded from .env automatically
-make infer
+# Run inference in generate mode
+make inference-infer
 
-# Run in evaluate_single mode
-make evaluate
+# Run in evaluate mode
+make inference-evaluate
 ```
 
 ## Agent Development
@@ -99,25 +164,77 @@ This repository includes support for building LLM-powered agents using LangGraph
 
 The repository includes a Jupyter notebook for developing and testing agents. To use it:
 
-1. Ensure you've started the vLLM server in one terminal: `make start-server`
-2. Start Jupyter Lab in another terminal: `make jupyter`
+1. Ensure you've started the vLLM server in one terminal: `make inference-server`
+2. Start Jupyter Lab in another terminal:
+   ```bash
+   # Activate the Jupyter environment
+   source venv/bin/activate
+   
+   # Start Jupyter Lab
+   make inference-lab
+   ```
 3. Open the travel planning notebook and select the "neuron_agents" kernel
 
 ## Makefile Commands
 
 | Command | Description |
 |---------|-------------|
-| `source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate` | Activate AWS Neuron environment |
-| `python -m venv venv && source venv/bin/activate` | Create and activate local Python virtual environment |
-| `make setup-jupyter` | Install requirements and setup Jupyter kernel |
-| `make setup-vllm` | Setup vLLM for Neuron |
-| `make download` | Download model from Hugging Face |
-| `make infer` | Run inference in generate mode |
-| `make evaluate` | Run inference in evaluate_all mode |
-| `make start-server` | Start vLLM OpenAI-compatible API server |
-| `make jupyter` | Run Jupyter Lab server |
-| `make clean` | Remove generated files |
+| **General** |
+| `make help` | Show help message for all commands |
+| `make clean` | Clean all generated files |
+| **Fine-tuning** |
+| `make finetune` | Run all fine-tuning steps |
+| `make finetune-deps` | Install fine-tuning dependencies |
+| `make finetune-data` | Download datasets for fine-tuning |
+| `make finetune-model` | Download model for fine-tuning |
+| `make finetune-convert` | Convert checkpoint to NxDT format |
+| `make finetune-precompile` | Pre-compile graphs (AOT) |
+| `make finetune-train` | Run fine-tuning job |
+| `make finetune-clean` | Clean up fine-tuning files |
+| **Inference** |
+| `make inference` | Run inference (shortcut to inference-infer) |
+| `make inference-setup` | Setup vLLM for Neuron |
+| `make inference-jupyter` | Setup Jupyter environment |
+| `make inference-download` | Download model from Hugging Face |
+| `make inference-infer` | Run inference in generate mode |
+| `make inference-evaluate` | Run inference in evaluate mode |
+| `make inference-server` | Start vLLM OpenAI-compatible API server |
+| `make inference-lab` | Run Jupyter Lab server |
+| `make inference-clean` | Clean up inference files |
 
+## Environment Requirements
+
+- For fine-tuning: `source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate`
+- For inference: `source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate`
+- For agent development (Jupyter): `source venv/bin/activate`
+
+## Full Workflow Example
+
+Here's a complete workflow example combining all components:
+
+1. **Fine-tune a model**:
+   ```bash
+   source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+   make finetune
+   ```
+
+2. **Serve the model** for inference:
+   ```bash
+   source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+   make inference-setup
+   # You can either use your fine-tuned model or download one
+   # make inference-download
+   make inference-server
+   ```
+
+3. **Build agents** with the served model:
+   ```bash
+   # In a new terminal
+   source venv/bin/activate
+   make inference-jupyter
+   make inference-lab
+   # Open the Jupyter notebook and connect to your model
+   ```
 
 ---
 

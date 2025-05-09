@@ -44,7 +44,7 @@ pip install packaging wheel
 python setup.py bdist_wheel
 
 # Copy out the generated wheel path for later
-APEX_WHEEL=$(ls ~/nki-llama/fine-tune/apex/dist/apex-*.whl | head -1)
+APEX_WHEEL=$(ls ~/nki-llama/src/fine-tune/apex/dist/apex-*.whl | head -1)
 
 # 3c. Return to root of our example
 cd ..
