@@ -1,6 +1,6 @@
 # NKI Llama
 
-📢 Congratulations to the winning teams! Details about the contest track at ASPLOS are available on the blog post [here](https://www.sigarch.org/the-industry-contest-track-at-sigarch-conferences-the-asplos-2025-experience/). The code from the first place team is available [here](https://github.com/thustorage/nki-llama-contest). The second place team is [here](https://github.com/PASAUCMerced/nki-llama).
+📢 Congratulations to the winning teams! Details about the contest track at ASPLOS are available on the blog post [here](https://www.sigarch.org/the-industry-contest-track-at-sigarch-conferences-the-asplos-2025-experience/). The code from the first place team is available [here](https://github.com/thustorage/nki-llama-contest). The second place team is [here](https://github.com/PASAUCMerced/nki-llama). The third place team is [here](https://github.com/corelab-src/nki-llama).
 
 ## Getting Started
 
