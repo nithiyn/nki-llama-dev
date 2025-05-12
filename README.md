@@ -1,6 +1,6 @@
 # NKI Llama
 
-📢 Contestants, please note that we have updated the due date to March 10, anywhere on Earth. This is to allow for more time to address questions about benchmarking, which is both the purpose of the competition and core to the success metric. 
+📢 Congratulations to the winning teams! Details about the contest track at ASPLOS are available on the blog post [here](https://www.sigarch.org/the-industry-contest-track-at-sigarch-conferences-the-asplos-2025-experience/). The code from the first place team is available [here](https://github.com/thustorage/nki-llama-contest). The second place team is [here](https://github.com/PASAUCMerced/nki-llama).
 
 ## Getting Started
 
