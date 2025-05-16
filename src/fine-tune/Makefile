@@ -1,6 +1,6 @@
 # examples/nxdt_finetune_llama3_8B_lora/Makefile
 
--include .env
+-include ../../.env
 
 SHELL := /bin/bash
 
@@ -34,7 +34,7 @@ data: check-neuron-venv
 
 model: check-neuron-venv
 	@echo "==> Downloading & converting model"
-	bash scripts/download_model.sh
+	HF_TOKEN="${HF_TOKEN}" bash scripts/download_model.sh
 
 convert_ckpt: check-neuron-venv
 	@echo "==> Converting checkpoint to NxDT format"

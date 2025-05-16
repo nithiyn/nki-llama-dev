@@ -16,8 +16,14 @@ echo "==== Upgrading setuptools ===="
 pip install --upgrade setuptools
 
 # 3. Build a slim CPU-only Apex (NeMo dependency)
-echo "==== Cloning Apex repository ===="
-git clone https://github.com/NVIDIA/apex.git apex
+echo "==== Checking for Apex repository ===="
+if [ ! -d "apex" ]; then
+    echo "==== Cloning Apex repository ===="
+    git clone https://github.com/NVIDIA/apex.git apex
+else
+    echo "==== Apex repository already exists, skipping clone ===="
+fi
+
 cd apex
 echo "==== Checking out Apex version 23.05 ===="
 git checkout 23.05

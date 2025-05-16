@@ -3,6 +3,13 @@ set -e
 
 echo "==== Starting Llama model download and conversion script ===="
 
+# Check if HF_TOKEN is set
+if [ -z "$HF_TOKEN" ]; then
+    echo "Error: HF_TOKEN environment variable is not set!"
+    echo "Please make sure HF_TOKEN is defined in your .env file"
+    exit 1
+fi
+
 echo "==== Changing to fine-tune workspace ===="
 # Go to your fine-tune workspace
 cd ~/nki-llama/src/fine-tune
@@ -34,13 +41,14 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 model_id = "meta-llama/Meta-Llama-3-8B"
 tokenizer_dir = os.path.expanduser(os.environ["TOKENIZER_DIR"])
 model_dir     = os.path.expanduser(os.environ["MODEL_DIR"])
+hf_token      = os.environ.get("HF_TOKEN")
 
 print(f"Downloading tokenizer from {model_id}...")
-AutoTokenizer.from_pretrained(model_id).save_pretrained(tokenizer_dir)
+AutoTokenizer.from_pretrained(model_id, token=hf_token).save_pretrained(tokenizer_dir)
 print(f"Tokenizer saved to {tokenizer_dir}")
 
 print(f"Downloading model from {model_id}...")
-AutoModelForCausalLM.from_pretrained(model_id).save_pretrained(model_dir)
+AutoModelForCausalLM.from_pretrained(model_id, token=hf_token).save_pretrained(model_dir)
 print(f"Model saved to {model_dir}")
 PYCODE
 

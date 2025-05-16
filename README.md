@@ -144,6 +144,8 @@ COMPILED_MODEL_DIR=~/traced_model
 PORT=8080
 MAX_MODEL_LEN=2048
 TENSOR_PARALLEL_SIZE=8
+
+HF_TOKEN=your_token_here
 ```
 
 The Makefile will automatically load this configuration if present, or prompt you for values if not set.

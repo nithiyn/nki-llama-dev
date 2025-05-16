@@ -39,7 +39,7 @@ exp_manager:
   load_xser: True
   save_bf16: False
   async_checkpointing: False # default to not use async checkpointing
-  resume_from_checkpoint: /home/ubuntu/nki-llama/fine-tune/model_assets/converted_hf_style_hf_to_nxdt_tp8pp4/ # manually set the checkpoint file to load from. [ModelAlignment change required]
+  resume_from_checkpoint: /home/ubuntu/nki-llama/src/fine-tune/model_assets/converted_hf_style_hf_to_nxdt_tp8pp4/ # manually set the checkpoint file to load from. [ModelAlignment change required]
 
 distributed_strategy:
   tensor_model_parallel_size: 32
@@ -52,12 +52,12 @@ distributed_strategy:
 data:
   micro_batch_size: 1 # limited by TRN memory
   global_batch_size: 64
-  train_dir: /home/ubuntu/nki-llama/fine-tune/datasets/llama3-1_8B/training.jsonl # [SFT/DPO] '/ubuntu/training.jsonl' or arrow file. As for ModelAlignment we use HF style dataloader, we also use HF style data file paths
-  val_dir: /home/ubuntu/nki-llama/fine-tune/datasets/llama3-1_8B/validation.jsonl # [SFT/DPO] '/ubuntu/training.jsonl' or arrow file
+  train_dir: /home/ubuntu/nki-llama/src/fine-tune/datasets/llama3-1_8B/training.jsonl # [SFT/DPO] '/ubuntu/training.jsonl' or arrow file. As for ModelAlignment we use HF style dataloader, we also use HF style data file paths
+  val_dir: /home/ubuntu/nki-llama/src/fine-tune/datasets/llama3-1_8B/validation.jsonl # [SFT/DPO] '/ubuntu/training.jsonl' or arrow file
   dev_choose_samples: 2250 # [SFT] if set, will use those many number of records from the head of the dataset instead of using all. Set to null to use full dataset [SFT change 4 required]
   seq_length: 4096 # [SFT change 5 required]
   tokenizer:
-    type: /home/ubuntu/nki-llama/fine-tune/model_assets/llama_tokenizer # [SFT change 6 required]
+    type: /home/ubuntu/nki-llama/src/fine-tune/model_assets/llama_tokenizer # [SFT change 6 required]
 
 model:
   # specify micro_batch_size, global_batch_size, and model parallelism
@@ -66,7 +66,7 @@ model:
   # global_batch_size: 8 # will use more micro batches to reach global batch size
 
   # model architecture
-  model_config: /home/ubuntu/nki-llama/fine-tune/configs/model-config/8B_config_llama3-1/config.json # TODO: Expand this into arguments in this file [SFT change 7 required]
+  model_config: /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json # TODO: Expand this into arguments in this file [SFT change 7 required]
   encoder_seq_length: 8192
   max_position_embeddings: 8192
   num_layers: 32
