@@ -20,12 +20,12 @@ check-neuron-venv:
 deps: check-neuron-venv
 	@echo "==> Checking for existing dependencies..."
 	if pip show apex >/dev/null 2>&1 && \
-	   pip show neuronx_distributed_training >/dev/null 2>&1 && \
-	   pip show torch-neuronx >/dev/null 2>&1; then \
-	  echo "All dependencies are already installed."; \
+		pip show neuronx_distributed_training >/dev/null 2>&1 && \
+	    pip show torch-neuronx >/dev/null 2>&1; then \
+		echo "All dependencies are already installed."; \
 	else \
-	  echo "Installing Apex, NxDT and other dependencies..."; \
-	  bash scripts/bootstrap.sh; \
+		echo "Installing Apex, NxDT and other dependencies..."; \
+		bash scripts/bootstrap.sh; \
 	fi
 
 data: check-neuron-venv
