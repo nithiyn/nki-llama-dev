@@ -260,5 +260,8 @@ $RECYCLE.BIN/
 
 # Folders
 test/inference/output
+/apex/*
+/datasets/*
+/model_assets/*
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,jupyternotebooks,python
