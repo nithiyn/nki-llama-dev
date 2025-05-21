@@ -264,5 +264,8 @@ test/inference/output
 **/datasets/
 **/model_assets/
 **/neuronx-distributed-training/
+**/neuronxcc-*
+global_metric_store.json
+benchmark_report.json
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,linux,jupyternotebooks,python

@@ -30,7 +30,7 @@ help:
 	@echo "  setup-vllm     - Setup vLLM for Neuron (requires Neuron environment first)"
 	@echo "  download       - Download model from Hugging Face (requires Neuron environment first)"
 	@echo "  infer          - Run inference in generate mode (requires Neuron environment first)"
-	@echo "  evaluate       - Run inference in evaluate_all mode (requires Neuron environment first)"
+	@echo "  evaluate       - Run inference in evaluate_single mode (requires Neuron environment first)"
 	@echo "  start-server   - Start vLLM OpenAI-compatible API server"
 	@echo "  jupyter        - Run Jupyter Lab server"
 	@echo "  show-env       - Display environment variables loaded from .env file"
@@ -196,13 +196,19 @@ jupyter: check-local-venv
 .PHONY: infer
 infer: check-neuron-venv check-model-name
 	@echo "Running inference in generate mode with model: $(MODEL_NAME)"
-	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path $(MODELS_DIR)/"$(MODEL_NAME)" --compiled-model-path $(COMPILED_MODEL_DIR)/"$(MODEL_NAME)"
+	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)"
 
-# Run inference in evaluate_all mode
+# Run inference in evaluate_single mode
 .PHONY: evaluate
 evaluate: check-neuron-venv check-model-name
 	@echo "Running inference in evaluate_single mode with model: $(MODEL_NAME)"
 	cd ~ && $(PYTHON) $(REPOSITORY_PATH)/$(TEST_SCRIPT) --repository-path $(REPOSITORY_PATH)
+
+# Run inference in evaluate_all mode
+.PHONY: evaluate-all
+evaluate-all: check-neuron-venv check-model-name
+	@echo "Running inference in evaluate_all mode with model: $(MODEL_NAME)"
+	$(PYTHON) $(MAIN_SCRIPT) --mode evaluate_all --enable-nki --seq-len 640
 
 # Clean generated files
 .PHONY: clean

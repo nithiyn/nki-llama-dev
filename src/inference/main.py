@@ -140,7 +140,8 @@ def prepare_inference(model_cls, args):
     config_kwargs = copy.deepcopy(vars(args))
     config_kwargs = {k: v for k, v in config_kwargs.items() if v is not None}
     
-    args.model_path = '/'.join(args.model_path.split('/')[-3:])
+    args.model_path = os.path.expanduser(args.model_path)
+    args.compiled_model_path = os.path.expanduser(args.compiled_model_path)
 
     if args.on_device_sampling:
         config_kwargs["on_device_sampling_config"] = OnDeviceSamplingConfig(**config_kwargs)
@@ -590,8 +591,8 @@ def main():
         
     elif args.mode == "evaluate_all":
 
-        prompts = parse_prompts("data/prompts.txt")
-        prompt_data = parse_prompt_data("data/prompt_data.txt")
+        prompts = parse_prompts("../../data/prompts.txt")
+        prompt_data = parse_prompt_data("../../data/prompt_data.txt")
         assert len(prompts) == len(prompt_data)
 
         total_score = 0

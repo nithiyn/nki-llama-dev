@@ -86,7 +86,7 @@ finetune-clean:
 	$(MAKE) -C $(FINETUNE_DIR) clean
 
 # Inference targets
-.PHONY: inference inference-setup inference-jupyter inference-download inference-infer inference-evaluate inference-server inference-lab inference-clean inference-show-env
+.PHONY: inference inference-setup inference-jupyter inference-download inference-infer inference-evaluate inference-server inference-lab inference-clean inference-show-env inference-evaluate-all
 
 inference:
 	$(MAKE) -C $(INFERENCE_DIR) infer
@@ -108,6 +108,9 @@ inference-infer:
 
 inference-evaluate:
 	$(MAKE) -C $(INFERENCE_DIR) evaluate
+
+inference-evaluate-all:
+	$(MAKE) -C $(INFERENCE_DIR) evaluate-all
 
 inference-server:
 	$(MAKE) -C $(INFERENCE_DIR) start-server
