@@ -7,7 +7,7 @@
 PYTHON = python
 REPOSITORY_PATH = ~/nki-llama
 MAIN_SCRIPT = main.py
-TEST_SCRIPT = ../../test/inference/test.py
+TEST_SCRIPT = test/inference/test.py
 LOCAL_VENV = ../../venv/bin/activate
 MODELS_DIR = ~/models
 COMPILED_MODEL_DIR = ~/traced_model

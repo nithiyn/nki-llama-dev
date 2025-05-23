@@ -37,7 +37,7 @@ This repository contains three main components:
 
 ## Setup Steps
 
-1. Create a Trainium instance with AWS Neuron SDK v2.21 using EC2 with the following settings:
+1. Create a Trainium instance with AWS Neuron SDK v2.23 using EC2 with the following settings:
     1. **Name:** nki-llama
     2. **AMI:** Deep Learning AMI Neuron (Ubuntu 22.04)
     3. **Instance type:** trn1.32xlarge
@@ -63,12 +63,12 @@ This project requires three different Python environments:
 
 1. **Fine-tuning Environment**:
    ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+   source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
    ```
 
 2. **Inference Environment**:
    ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+   source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
    ```
 
 3. **Jupyter Environment** (for agent development):
@@ -84,7 +84,7 @@ Our Makefile simplifies the fine-tuning process:
 
 ```bash
 # Activate the fine-tuning environment
-source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 
 # Install dependencies
 make finetune-deps
@@ -113,7 +113,7 @@ Use our Makefile to simplify the setup and execution process for inference:
 
 ```bash
 # Activate the inference environment
-source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 
 # Setup vLLM for Neuron
 make inference-setup
@@ -158,8 +158,8 @@ The Makefile provides several commands for running inference and evaluation:
 # Run inference in generate mode
 make inference-infer
 
-# Run in evaluate mode
-make inference-evaluate
+# Run in evaluate-all mode
+make inference-evaluate-all
 ```
 
 ## Agent Development
@@ -215,8 +215,8 @@ The repository includes a Jupyter notebook for developing and testing agents. To
 
 ## Environment Requirements
 
-- For fine-tuning: `source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate`
-- For inference: `source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate`
+- For fine-tuning: `source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate`
+- For inference: `source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate`
 - For agent development (Jupyter): `source venv/bin/activate`
 
 ## Full Workflow Example
@@ -225,13 +225,13 @@ Here's a complete workflow example combining all components:
 
 1. **Fine-tune a model**:
    ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+   source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
    make finetune
    ```
 
 2. **Serve the model** for inference:
    ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_5_nxd_inference/bin/activate
+   source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
    make inference-setup
    # You can either use your fine-tuned model or download one
    # make inference-download
