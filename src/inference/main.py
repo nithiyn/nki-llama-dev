@@ -577,7 +577,10 @@ def main():
         latency = report["e2e_model"]["latency_ms_p99"]
         throughput = report["e2e_model"]["throughput"]
 
-        nki_flop_ratio = count_nki_flop_ratio()
+        nki_flop_ratio = count_nki_flop_ratio(
+            hlo_path_context_enc=os.path.join(os.path.expanduser(args.compiled_model_path), "context_encoding_model/_tp0_bk0/model/graph.hlo"),
+            hlo_path_token_gen=os.path.join(os.path.expanduser(args.compiled_model_path), "token_generation_model/_tp0_bk0/model/graph.hlo")
+        )
 
         score = calculate_score(args.base_latency, args.base_throughput, accuracy, latency, throughput, nki_flop_ratio)
         print(
