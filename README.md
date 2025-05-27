@@ -22,7 +22,7 @@ This project follows a three-stage workflow:
 ## Technical Infrastructure
 
 ### Compute Resources
-- **Required Instance**: inf2.24xlarge
+- **Required Instance**: trn1.32xlarge 
 - **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04) with Neuron SDK 2.23.
 - **Base Packages**:
   - NxD (NeuronX Distributed Training)
@@ -41,7 +41,7 @@ This repository contains three main components:
 1. Create a Trainium instance with AWS Neuron SDK v2.23 using EC2 with the following settings:
     1. **Name:** nki-llama
     2. **AMI:** Deep Learning AMI Neuron (Ubuntu 22.04)
-    3. **Instance type:** inf2.24xlarge
+    3. **Instance type:** trn1.32xlarge
     4. **Key pair (login):** create a new key pair
     5. When connecting to these instances via SSH, use the username of *ubuntu*.
 
