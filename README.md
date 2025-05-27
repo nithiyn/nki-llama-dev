@@ -1,6 +1,6 @@
 # NKI Llama
 
-A unified project for fine-tuning, inference, and agent development of Llama models on AWS Neuron hardware.
+A unified project for fine-tuning, inference, and agent development of Llama models on AWS Trainium and Inferentia.
 
 
 ## Project Workflow
@@ -22,8 +22,8 @@ This project follows a three-stage workflow:
 ## Technical Infrastructure
 
 ### Compute Resources
-- **Required Instance**: trn1.32xlarge
-- **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04)
+- **Required Instance**: inf2.24xlarge
+- **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04) with Neuron SDK 2.23.
 - **Base Packages**:
   - NxD (NeuronX Distributed Training)
   - NKI (Neuron Kernel Interface)
@@ -41,7 +41,7 @@ This repository contains three main components:
 1. Create a Trainium instance with AWS Neuron SDK v2.23 using EC2 with the following settings:
     1. **Name:** nki-llama
     2. **AMI:** Deep Learning AMI Neuron (Ubuntu 22.04)
-    3. **Instance type:** trn1.32xlarge
+    3. **Instance type:** inf2.24xlarge
     4. **Key pair (login):** create a new key pair
     5. When connecting to these instances via SSH, use the username of *ubuntu*.
 
