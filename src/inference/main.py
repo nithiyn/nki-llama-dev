@@ -7,6 +7,7 @@ import json
 import os
 import time
 import torch
+import re
 
 from torch_neuronx.pyhlo.hlo_pb2 import HloModuleProto
 from torch_neuronx.testing.validation import logit_validation
@@ -424,10 +425,7 @@ def run_accuracy_check(
     return True
 
 
-def count_nki_flop_ratio(
-    hlo_path_context_enc="/tmp/nxd_model/context_encoding_model/_tp0_bk0/model/graph.hlo",
-    hlo_path_token_gen="/tmp/nxd_model/token_generation_model/_tp0_bk0/model/graph.hlo"
-):
+def count_nki_flop_ratio(hlo_path_context_enc, hlo_path_token_gen):
     hlo_macs = 0
     nki_macs = 0
 
@@ -521,7 +519,26 @@ def calculate_score(base_latency, base_throughput, accuracy, latency, throughput
 
     return final_score
 
+def get_hlo(file_dir):
+    rt = '0'        
+    
+    for filename in os.listdir(file_dir):
+        
+        name_split = filename.split('.')
+    
+        if len(name_split) > 3:
 
+            # based on Neuron SDK 2.23 NxDI naming structure for HLO graph
+            assert name_split[0] == 'model' and name_split[2] == 'hlo_module'
+
+            rt = os.path.join(file_dir, filename)
+
+    # try again with different naming structure
+    if len(rt) <= 1: 
+        rt = os.path.join(file_dir, 'model/graph.hlo')
+            
+    return rt
+        
 def main():
     args = parse_args()
     if not args.prompts:
@@ -532,6 +549,9 @@ def main():
     
     base_model, _, base_generation_config = prepare_inference(baseline_llama.NeuronLlamaForCausalLM, args)
     model, tokenizer, generation_config = prepare_inference(NeuronLlamaForCausalLM, args)
+
+    hlo_context_enc = get_hlo("/tmp/nxd_model/context_encoding_model/_tp0_bk0/")
+    hlo_token_gen = get_hlo("/tmp/nxd_model/token_generation_model/_tp0_bk0/")
 
     if args.mode == "generate":
         run_generation(
@@ -578,8 +598,8 @@ def main():
         throughput = report["e2e_model"]["throughput"]
 
         nki_flop_ratio = count_nki_flop_ratio(
-            hlo_path_context_enc=os.path.join(os.path.expanduser(args.compiled_model_path), "context_encoding_model/_tp0_bk0/model/graph.hlo"),
-            hlo_path_token_gen=os.path.join(os.path.expanduser(args.compiled_model_path), "token_generation_model/_tp0_bk0/model/graph.hlo")
+            hlo_path_context_enc=hlo_context_enc,
+            hlo_path_token_gen=hlo_token_gen
         )
 
         score = calculate_score(args.base_latency, args.base_throughput, accuracy, latency, throughput, nki_flop_ratio)
@@ -623,7 +643,10 @@ def main():
             latency = report["e2e_model"]["latency_ms_p99"]
             throughput = report["e2e_model"]["throughput"]
 
-            nki_flop_ratio = count_nki_flop_ratio()
+            nki_flop_ratio = count_nki_flop_ratio(
+                hlo_path_context_enc=hlo_context_enc,
+                hlo_path_token_gen=hlo_token_gen
+            )
 
             score = calculate_score(base_latency, base_throughput, accuracy, latency, throughput, nki_flop_ratio)
             print(
