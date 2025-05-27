@@ -156,9 +156,6 @@ The Makefile will automatically load this configuration if present, or prompt yo
 The Makefile provides several commands for running inference and evaluation:
 
 ```bash
-# Run inference in generate mode
-make inference-infer
-
 # Run in evaluate-all mode
 make inference-evaluate-all
 ```
