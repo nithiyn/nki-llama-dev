@@ -205,7 +205,7 @@ The repository includes a Jupyter notebook for developing and testing agents. To
 | `make inference-setup` | Setup vLLM for Neuron |
 | `make inference-jupyter` | Setup Jupyter environment |
 | `make inference-download` | Download model from Hugging Face |
-| `make inference-infer` | Run inference in generate mode |
+| `make inference-infer` | Run inference in generate mode (wip) |
 | `make inference-evaluate` | Run inference in evaluate mode |
 | `make inference-server` | Start vLLM OpenAI-compatible API server |
 | `make inference-lab` | Run Jupyter Lab server |
