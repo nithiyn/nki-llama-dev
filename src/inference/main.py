@@ -550,9 +550,6 @@ def main():
     base_model, _, base_generation_config = prepare_inference(baseline_llama.NeuronLlamaForCausalLM, args)
     model, tokenizer, generation_config = prepare_inference(NeuronLlamaForCausalLM, args)
 
-    hlo_context_enc = get_hlo("/tmp/nxd_model/context_encoding_model/_tp0_bk0/")
-    hlo_token_gen = get_hlo("/tmp/nxd_model/token_generation_model/_tp0_bk0/")
-
     if args.mode == "generate":
         run_generation(
             model,
@@ -596,6 +593,9 @@ def main():
 
         latency = report["e2e_model"]["latency_ms_p99"]
         throughput = report["e2e_model"]["throughput"]
+
+        hlo_context_enc = get_hlo("/tmp/nxd_model/context_encoding_model/_tp0_bk0/")
+        hlo_token_gen = get_hlo("/tmp/nxd_model/token_generation_model/_tp0_bk0/")
 
         nki_flop_ratio = count_nki_flop_ratio(
             hlo_path_context_enc=hlo_context_enc,
@@ -642,7 +642,10 @@ def main():
 
             latency = report["e2e_model"]["latency_ms_p99"]
             throughput = report["e2e_model"]["throughput"]
-
+            
+            hlo_context_enc = get_hlo("/tmp/nxd_model/context_encoding_model/_tp0_bk0/")
+            hlo_token_gen = get_hlo("/tmp/nxd_model/token_generation_model/_tp0_bk0/")
+            
             nki_flop_ratio = count_nki_flop_ratio(
                 hlo_path_context_enc=hlo_context_enc,
                 hlo_path_token_gen=hlo_token_gen
