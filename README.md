@@ -46,38 +46,43 @@ This repository contains three main components:
     5. When connecting to these instances via SSH, use the username of *ubuntu*.
 
 2. Clone this repository and navigate to it:
-   ```bash
-   git clone [REPO_URL]
-   cd [PATH]/nki-llama
-   ```
+
+```bash
+git clone [REPO_URL]
+cd [PATH]/nki-llama
+```
 
 3. Create your `.env` file by copying the provided example:
-   ```bash
-   cp .env.example .env
-   # Edit .env file with your preferred settings
-   nano .env
-   ```
+
+```bash
+cp .env.example .env
+# Edit .env file with your preferred settings
+nano .env
+```
 
 ## Environment Setup
 
 This project requires three different Python environments:
 
 1. **Fine-tuning Environment**:
-   ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
-   ```
+
+```bash
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
+```
 
 2. **Inference Environment**:
-   ```bash
-   source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
-   ```
+
+```bash
+source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
+```
 
 3. **Jupyter Environment** (for agent development):
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   make inference-jupyter  # Sets up Jupyter and installs required packages
-   ```
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+make inference-jupyter  # Sets up Jupyter and installs required packages
+```
 
 ## Fine-tuning Workflow
 
