@@ -1,6 +1,6 @@
 # NKI Llama
 
-A unified project for fine-tuning, inference, and agent development of Llama models on AWS Neuron hardware.
+A unified project for fine-tuning, inference, and agent development of Llama models on AWS Trainium and Inferentia.
 
 
 ## Project Workflow
@@ -22,8 +22,8 @@ This project follows a three-stage workflow:
 ## Technical Infrastructure
 
 ### Compute Resources
-- **Required Instance**: trn1.32xlarge
-- **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04)
+- **Required Instance**: trn1.32xlarge 
+- **Base AMI**: Deep Learning AMI Neuron (Ubuntu 22.04) with Neuron SDK 2.23.
 - **Base Packages**:
   - NxD (NeuronX Distributed Training)
   - NKI (Neuron Kernel Interface)
@@ -162,9 +162,6 @@ The Makefile will automatically load this configuration if present, or prompt yo
 The Makefile provides several commands for running inference and evaluation:
 
 ```bash
-# Run inference in generate mode
-make inference-infer
-
 # Run in evaluate-all mode
 make inference-evaluate-all
 ```
@@ -216,7 +213,7 @@ make inference-lab
 | `make inference-setup` | Setup vLLM for Neuron |
 | `make inference-jupyter` | Setup Jupyter environment |
 | `make inference-download` | Download model from Hugging Face |
-| `make inference-infer` | Run inference in generate mode |
+| `make inference-infer` | Run inference in generate mode (wip) |
 | `make inference-evaluate` | Run inference in evaluate mode |
 | `make inference-server` | Start vLLM OpenAI-compatible API server |
 | `make inference-lab` | Run Jupyter Lab server |
