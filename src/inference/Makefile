@@ -217,7 +217,7 @@ jupyter: check-local-venv
 .PHONY: infer
 infer: check-neuron-venv check-model-name
 	@echo "Running inference in generate mode with model: $(MODEL_NAME)"
-	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)"
+	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)" --enable-nki --seq-len 640
 
 # Run inference in evaluate_single mode
 .PHONY: evaluate
