@@ -217,7 +217,7 @@ jupyter: check-local-venv
 .PHONY: infer
 infer: check-neuron-venv check-model-name
 	@echo "Running inference in generate mode with model: $(MODEL_NAME)"
-	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)" --enable-nki --seq-len 640
+	$(PYTHON) $(MAIN_SCRIPT) --mode generate --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)" --enable-nki --seq-len 640 --tp-degree $(TENSOR_PARALLEL_SIZE)
 
 # Run inference in evaluate_single mode
 .PHONY: evaluate
@@ -229,7 +229,7 @@ evaluate: check-neuron-venv check-model-name
 .PHONY: evaluate-all
 evaluate-all: check-neuron-venv check-model-name
 	@echo "Running inference in evaluate_all mode with model: $(MODEL_NAME)"
-	$(PYTHON) $(MAIN_SCRIPT) --mode evaluate_all --enable-nki --seq-len 640
+	$(PYTHON) $(MAIN_SCRIPT) --mode evaluate_all --model-path "$(MODELS_DIR)/$(MODEL_NAME)" --compiled-model-path "$(COMPILED_MODEL_DIR)/$(MODEL_NAME)" --enable-nki --seq-len 640 --tp-degree $(TENSOR_PARALLEL_SIZE)
 
 # Clean generated files
 .PHONY: clean

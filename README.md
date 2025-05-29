@@ -150,7 +150,7 @@ MODEL_NAME=meta-llama-3-8b
 # Server configurations
 PORT=8080
 MAX_MODEL_LEN=2048
-TENSOR_PARALLEL_SIZE=8
+TENSOR_PARALLEL_SIZE=32
 
 HF_TOKEN=your_token_here
 ```
@@ -162,6 +162,16 @@ The Makefile will automatically load this configuration if present, or prompt yo
 The Makefile provides several commands for running inference and evaluation:
 
 ```bash
+# Activate the inference environment
+source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
+
+# Download model from Hugging Face (you'll need a HF token)
+# (skip this step if using your fine-tuned model)
+make inference-download
+
+# Run inference in generate mode
+make inference-infer
+
 # Run in evaluate-all mode
 make inference-evaluate-all
 ```
