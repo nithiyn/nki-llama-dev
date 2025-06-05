@@ -2,9 +2,9 @@
 
 A unified project for fine-tuning, inference, and agent development of Llama models on AWS Trainium and Inferentia.
 
-### Neuron SDK version - (Neuron 2.23.0 Release)
-#### Neuronx Distributed Inference [0.3.5591] 
-#### NeuronX Distributed Training [1.3.0]
+#### Neuron SDK version - (Neuron 2.23.0 Release)
+###### Neuronx Distributed Inference [0.3.5591] 
+###### NeuronX Distributed Training [1.3.0]
 
 ## Project Workflow
 
