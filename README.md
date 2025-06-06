@@ -65,10 +65,10 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 ./nki-llama inference benchmark
 
 # Run quick single evaluation
-./nki-llama inference benchmark single
+# ./nki-llama inference benchmark single (TODO: FIX)
 
 # Start inference server
-./nki-llama server
+# ./nki-llama server (TODO: DOCS)
 ```
 
 ## 🏗️ Initial Setup
