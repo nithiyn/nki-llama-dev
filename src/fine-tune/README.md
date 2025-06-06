@@ -1,14 +1,10 @@
-# pipeline.sh 
+## 1 · Prerequisites
 
----
-
-## 1 · Prerequisites
-
-| Requirement | Reason | Install / Notes |
+| Requirement | Reason | Install / Notes |
 |-------------|--------|-----------------|
 | **Neuron virtual‑env** | Script refuses to run outside it | `source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate` |
 | **`scripts/` folder** | step-by step scripts for running fine tuning | |
-| **`.env` file** *(optional)* | Central place for env vars | Place at `../../.env` |
+| **`.env` file** *(optional)* | Central place for env vars | Place at `../../.env` |
 
 Example `.env`:
 
@@ -19,7 +15,7 @@ MODEL_ID=meta-llama-3-8b
 
 ---
 
-## 2 · Setup
+## 2 · Setup
 
 ```bash
 # Clone repo and enter it
@@ -29,12 +25,57 @@ cd ./src/fine-tune
 chmod +x pipeline.sh
 
 # Activate Neuron environment
-source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 ```
 
 ---
 
-## 3 · Usage
+## 3 · Using tmux for Long-Running Training
+
+### Why tmux?
+
+Training neural networks on AWS Neuron can take hours or even days. Using tmux ensures your training continues even if:
+- Your SSH connection drops
+- You need to close your laptop
+- Network interruptions occur
+- You want to monitor progress from multiple devices
+
+### Quick tmux Setup
+
+```bash
+# Create a new tmux session named "training"
+tmux new -s training
+
+# Inside tmux, activate Neuron environment and start training
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
+cd ./src/fine-tune
+./pipeline.sh train
+
+# Detach from session (training continues in background)
+# Press: Ctrl+b, then d
+
+# Later, reattach to check progress
+tmux attach -t training
+
+# List all sessions
+tmux ls
+```
+
+### Essential tmux Commands
+
+| Command | Action |
+|---------|--------|
+| `tmux new -s training` | Create session named "training" |
+| `Ctrl+b d` | Detach (leave session running) |
+| `tmux attach -t training` | Reattach to training session |
+| `tmux ls` | List all sessions |
+| `tmux kill-session -t training` | Terminate session |
+
+**Pro tip:** Start your training in tmux from the beginning. It's much safer than hoping your connection stays stable!
+
+---
+
+## 4 · Usage
 
 | Command | Action |
 |---------|--------|
@@ -47,11 +88,11 @@ source /opt/aws_neuronx_venv_pytorch_2_5/bin/activate
 | `./pipeline.sh train` | Start fine‑tuning |
 | `./pipeline.sh clean` | Remove generated datasets, weights, experiments |
 
- Each sub‑command double‑checks you’re inside a Neuron venv and prints a helpful error if not.
+ Each sub‑command double‑checks you're inside a Neuron venv and prints a helpful error if not.
 
 ---
 
-## 4 · Environment Variables
+## 5 · Environment Variables
 
 | Variable | Purpose | How to set |
 |----------|---------|-----------|
@@ -62,7 +103,7 @@ The script auto‑loads `../../.env` with `set -a; source …`. Modify the `ENV_
 
 ---
 
-## 5 · Troubleshooting
+## 6 · Troubleshooting
 
 | Symptom | Probable Cause | Fix |
 |---------|---------------|-----|
@@ -73,7 +114,7 @@ The script auto‑loads `../../.env` with `set -a; source …`. Modify the `ENV_
 
 ---
 
-## 6 · Extending the Pipeline
+## 7 · Extending the Pipeline
 
 1. Add a new Bash function in `pipeline.sh` (e.g., `evaluate()`).
 2. Append its name to the pattern list inside `main()`.

@@ -1,0 +1,11 @@
+{
+    "timestamp": "20250606_151034",
+    "mode": "evaluate_all",
+    "model_name": "llama-3-8b",
+    "model_path": "/home/ubuntu/models/llama-3-8b",
+    "compiled_model_path": "/home/ubuntu/traced_model/llama-3-8b",
+    "nki_enabled": true,
+    "sequence_length": 640,
+    "tensor_parallel_size": 8,
+    "neuron_rt_cores": "8"
+}
