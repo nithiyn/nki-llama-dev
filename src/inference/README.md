@@ -23,9 +23,9 @@ A unified project for fine-tuning, inference, and agent development of LLaMA mod
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌──────────────┐
 │                 │     │                  │     │                 │     │              │
 │   Fine-tuning   │────▶│ NKI Compilation  │────▶│ vLLM Inference  │────▶│    Agent     │
-│      (NxD)      │     │  & Benchmarking  │     │     (NxDI)      │     │ Development  │
+│      (NxD)      │     │  & Evaluation    │     │     (NxDI)      │     │ Development  │
 │                 │     │                  │     │                 │     │              │
-└─────────────────┘     └──────────────────┘     └─────────────────┘     └──────────────┐
+└─────────────────┘     └──────────────────┘     └─────────────────┘     └──────────────┘
         │                         │                         │
         │                         │                         │
         ▼                         ▼                         ▼
@@ -36,11 +36,10 @@ A unified project for fine-tuning, inference, and agent development of LLaMA mod
 ### Detailed Workflow:
 
 1. **Fine-tune** a model using NeuronX Distributed (NxD) on Trainium
-2. **NKI Compilation & Benchmarking**:
+2. **NKI Compilation** optimizes the model for Neuron hardware:
    - Compiles model graphs with Neuron Kernel Interface (NKI)
    - Creates optimized artifacts for inference
    - Benchmarks performance characteristics
-   - Supports two modes: `evaluate_single` and `evaluate_all`
 3. **vLLM Inference** serves the NKI-compiled model using NeuronX Distributed Inference (NxDI)
 4. **Agent Development** connects to the inference endpoint for application building
 
@@ -60,15 +59,13 @@ chmod +x install.sh
 # Setup Guide
 ./nki-llama setup
 
-# Run full benchmark (with NKI compilation)
-source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
-./nki-llama inference benchmark
-
-# Run quick single evaluation
-# ./nki-llama inference benchmark single (TODO: FIX)
+# Run fine-tuning
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
+./nki-llama finetune all
 
 # Start inference server
-# ./nki-llama server (TODO: DOCS)
+source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
+./nki-llama server
 ```
 
 ## 🏗️ Initial Setup
@@ -121,7 +118,7 @@ nano .env  # Add your HF_TOKEN and adjust settings
 │       └── scripts/      # Inference helper scripts
 │           ├── setup-vllm.sh
 │           ├── download-model.sh
-│           ├── run-nki-benchmark.sh  # Supports both evaluate_single and evaluate_all modes
+│           ├── run-nki-benchmark.sh
 │           ├── start-server.sh
 │           └── jupyter.sh
 └── logs/                 # Unified logs
@@ -176,56 +173,32 @@ source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 ./nki-llama finetune all
 ```
 
-### NKI Benchmark Modes
+### Inference Workflow
 
-The benchmark script supports two evaluation modes:
+The inference pipeline includes NKI (Neuron Kernel Interface) compilation and NxDI integration with vLLM for optimal performance on Neuron hardware.
 
-#### 1. evaluate_single Mode
-Quick single evaluation using the repository test script:
 ```bash
 # Activate inference environment
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 
-# Run single evaluation
-./nki-llama inference benchmark single
-
-# Or explicitly specify mode
-./nki-llama inference benchmark --mode evaluate_single
-```
-
-#### 2. evaluate_all Mode (Default)
-Comprehensive benchmark with NKI compilation and all configurations:
-```bash
-# Download model if not already available
-./nki-llama inference download
-
-# Run full benchmark (compiles model on first run)
-./nki-llama inference benchmark
-
-# Or with custom parameters
-./nki-llama inference benchmark --seq-len 1024 --tp-degree 8
-
-# Run without NKI optimizations
-./nki-llama inference benchmark --no-nki
-```
-
-**Key differences:**
-- **evaluate_single**: Quick validation, runs from repository test script
-- **evaluate_all**: Full benchmark with model compilation, creates cached artifacts for vLLM
-
-**Note**: The `evaluate_all` mode automatically compiles the model with NKI optimizations on the first run (10-30 minutes). Subsequent runs use the cached compilation.
-
-### Inference Serving
-
-```bash
-# After benchmarking (which compiles the model), start the API server
-
-# Setup vLLM
+# Setup and prepare
 ./nki-llama inference setup      # Setup vLLM for Neuron
+./nki-llama inference download   # Download model (skip if using fine-tuned)
 
-# Start the API server
+# Compile and optimize with NKI
+./nki-llama inference compile    # Compile model with NKI (10-30 min)
+
+# Benchmark performance
+./nki-llama inference benchmark  # Run performance evaluation
+
+# Start serving
 ./nki-llama inference server     # Start OpenAI-compatible API
 ```
+
+**Note**: The compilation step creates NKI-optimized artifacts that are:
+- Required for vLLM to use the model efficiently
+- Cached for future use (no recompilation needed)
+- Optimized specifically for your Neuron hardware configuration
 
 ## 🤖 Agent Development
 
@@ -252,7 +225,7 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 ## ⚙️ Configuration
 
 All configuration is managed through:
-1. `nki-llama.config` - System paths and defaults (includes TEST_SCRIPT, MAIN_SCRIPT, etc.)
+1. `nki-llama.config` - System paths and defaults
 2. `.env` - Your personal configuration
 
 ### Key Variables
@@ -320,31 +293,27 @@ source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 # Check progress later: tmux attach -t training
 ```
 
-### 2. Benchmark Model with NKI
+### 2. Compile Model with NKI
 ```bash
-# Create tmux session for benchmarking
-tmux new -s benchmark
+# Create tmux session for compilation
+tmux new -s compile
 
-# Inside tmux: run benchmarks
+# Inside tmux: compile the model
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
+./nki-llama inference compile
 
-# Quick single evaluation with compilation  (first run compiles)
-# ./nki-llama inference benchmark single (TODO: FIX COMMAND)
-
-# Or full benchmark with compilation (first run compiles)
-./nki-llama inference benchmark
-
+# This creates optimized artifacts for vLLM
 # Detach and let it run: Ctrl+B, D
 ```
 
-### 3. View Benchmark Results
+### 3. Benchmark Performance
 ```bash
-# After benchmarking completes
+# After compilation, run benchmarks
+./nki-llama inference benchmark --iterations 20
+
+# View benchmark results
 ls logs/benchmarks/
 cat logs/benchmarks/*/metadata.json
-
-# View detailed logs
-cat logs/benchmarks/*/benchmark.log
 ```
 
 ### 4. Serve with vLLM
@@ -356,7 +325,7 @@ tmux new -s vllm
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 ./nki-llama server
 
-# Server automatically uses NKI-compiled artifacts
+# Server uses NKI-compiled artifacts automatically
 # Detach: Ctrl+B, D
 ```
 
@@ -376,7 +345,7 @@ tmux ls
 
 # Attach to a session
 tmux attach -t training
-tmux attach -t benchmark
+tmux attach -t compile
 tmux attach -t vllm
 
 # Kill a session
@@ -398,12 +367,10 @@ source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 ```
 
-### Benchmark Modes
-- **evaluate_single**: Use for quick validation tests
-- **evaluate_all**: Use for full performance evaluation and model compilation
-- First-time compilation with NKI (in evaluate_all mode) can take 10-30 minutes
+### Model Compilation
+- First-time model compilation with NKI can take 10-30 minutes
 - Compiled models are cached in `~/traced_model/`
-- Subsequent benchmark runs will use the cached compilation
+- Subsequent runs will use the cached compilation
 
 ### Memory Issues
 - Ensure you're using trn1.32xlarge for full model support
@@ -411,7 +378,7 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 - Adjust `TENSOR_PARALLEL_SIZE` if needed
 
 ### Using with tmux
-For long-running operations like training, benchmarking, or serving:
+For long-running operations like training, compilation, or serving:
 
 ```bash
 # Create a new tmux session
