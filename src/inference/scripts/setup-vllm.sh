@@ -37,7 +37,7 @@ fi
 # Install requirements
 cd "$VLLM_REPO"
 echo "Installing vLLM requirements..."
-pip install -r requirements-neuron.txt
+pip install -U -r requirements/neuron.txt
 
 # Install vLLM
 echo "Installing vLLM for Neuron..."
