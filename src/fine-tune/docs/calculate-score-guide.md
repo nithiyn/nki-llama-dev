@@ -20,22 +20,6 @@ This tool analyzes training performance on AWS Trainium instances by:
 - **Log Parsing**: Extracts throughput and loss metrics from training logs
 - **Flexible Configuration**: Supports various model configurations and hardware backends
 
-## Requirements
-
-- Python 3.7+
-- `neuronx_distributed_training` package
-- `torch_neuronx` package
-- PyYAML
-- Access to compiled HLO files in the Neuron cache directory
-
-## Installation
-
-```bash
-# Ensure you have the AWS Neuron SDK installed
-# Install additional dependencies
-pip install pyyaml
-```
-
 ## Usage
 
 ### Example
