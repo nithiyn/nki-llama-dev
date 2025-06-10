@@ -27,12 +27,11 @@ if [[ -d "$VLLM_REPO" ]]; then
     echo "Updating existing vLLM repository..."
     cd "$VLLM_REPO"
     git fetch
-    git checkout "$VLLM_BRANCH"
     git pull
 else
     echo "Cloning vLLM repository..."
     cd "$(dirname "$VLLM_REPO")"
-    git clone -b "$VLLM_BRANCH" https://github.com/aws-neuron/upstreaming-to-vllm.git
+    git clone https://github.com/vllm-project/vllm.git
 fi
 
 # Install requirements
