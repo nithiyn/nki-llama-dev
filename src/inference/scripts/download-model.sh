@@ -29,6 +29,19 @@ fi
 # Ensure huggingface-cli is installed
 pip install -q huggingface_hub[cli]
 
+# Ensure transformers < 4.50 (needed by Neuron hf_adapter)
+python - <<'PY'
+import subprocess, pkg_resources, sys
+req = "4.50.0"
+try:
+    ver = pkg_resources.get_distribution("transformers").version
+except pkg_resources.DistributionNotFound:
+    ver = ""
+if not ver or pkg_resources.parse_version(ver) >= pkg_resources.parse_version(req):
+    print("Installing transformers<%s …" % req)
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", f"transformers<{req}"])
+PY
+
 # Create models directory
 mkdir -p "$NKI_MODELS"
 
