@@ -194,9 +194,10 @@ cmd_inference_download() {
 cmd_inference_benchmark() {
     echo -e "${BOLD}Running NKI benchmark evaluation...${NC}"
     
-    # Parse benchmark mode
+    # Parse benchmark mode and special flags
     local mode="evaluate_all"  # Default mode
     local args=()
+    local clear_cache=false
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -212,6 +213,11 @@ cmd_inference_benchmark() {
                 mode="$2"
                 shift 2
                 ;;
+            --clear-cache|clear-cache)
+                clear_cache=true
+                args+=("--clear-cache")
+                shift
+                ;;
             *)
                 args+=("$1")
                 shift
@@ -219,27 +225,35 @@ cmd_inference_benchmark() {
         esac
     done
     
-    echo -e "${YELLOW}💡 Running benchmark in ${mode} mode${NC}"
+    # Show mode information
+    echo -e "${YELLOW}💡 Running benchmark in ${CYAN}${mode}${YELLOW} mode${NC}"
     
     if [[ "$mode" == "evaluate_single" ]]; then
         echo -e "${YELLOW}   This runs a quick single evaluation from the repository test script.${NC}"
     else
         echo -e "${YELLOW}   This includes model compilation with NKI optimizations (10-30 min on first run).${NC}"
         echo -e "${YELLOW}   The compiled model will be cached for future use.${NC}"
+        echo -e "${YELLOW}   ${CYAN}Auto cache recovery is enabled by default.${NC}"
+    fi
+    
+    if [[ "$clear_cache" == "true" ]]; then
+        echo -e "${YELLOW}   ${CYAN}Cache will be cleared before running.${NC}"
     fi
     
     echo -e "${YELLOW}   Using tmux is strongly recommended!${NC}"
     
-    # Check if we're in tmux
-    if [[ -z "${TMUX:-}" ]]; then
-        echo -e "${YELLOW}⚠️  Not running in tmux. Consider using:${NC}"
+    # Check if we're in tmux for evaluate_all mode
+    if [[ "$mode" == "evaluate_all" ]] && [[ -z "${TMUX:-}" ]]; then
+        echo -e "${YELLOW}⚠️  Not running in tmux. ${BOLD}This is critical for long compilations!${NC}"
+        echo -e "${YELLOW}   Disconnections will terminate the process (SIGHUP).${NC}"
+        echo
         echo -e "   ${CYAN}tmux new -s benchmark${NC}"
         echo -e "   ${CYAN}./nki-llama inference benchmark ${mode} ${args[*]}${NC}"
         echo
-        read -p "Continue without tmux? [Y/n] " -n 1 -r
+        read -p "Continue without tmux? [y/N] " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Nn]$ ]]; then
-            echo -e "${BLUE}Start tmux with: tmux new -s benchmark${NC}"
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}Please start tmux with: ${CYAN}tmux new -s benchmark${NC}"
             exit 0
         fi
     fi
@@ -277,6 +291,22 @@ cmd_status() {
     [[ -d "${NKI_MODELS}/${MODEL_NAME}" ]] && echo -e "• Model: ${GREEN}✓${NC}" || echo -e "• Model: ${YELLOW}⚠${NC}"
     [[ -d "${NKI_COMPILED}/${MODEL_NAME}" ]] && echo -e "• Compiled: ${GREEN}✓${NC}" || echo -e "• Compiled: ${YELLOW}⚠${NC}"
     [[ -d "$VLLM_REPO" ]] && echo -e "• vLLM: ${GREEN}✓${NC}" || echo -e "• vLLM: ${YELLOW}⚠${NC}"
+    
+    # Check compilation cache
+    CACHE_DIR="/var/tmp/neuron-compile-cache"
+    if [[ -d "$CACHE_DIR" ]]; then
+        CACHE_SIZE=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1 || echo "unknown")
+        echo -e "• Compile Cache: ${GREEN}✓${NC} (${CACHE_SIZE})"
+        
+        # Check for failed compilations
+        FAILED_COUNT=$(find "$CACHE_DIR" -name "*.neff" -size 0 2>/dev/null | wc -l || echo "0")
+        if [[ $FAILED_COUNT -gt 0 ]]; then
+            echo -e "  ${YELLOW}⚠ ${FAILED_COUNT} failed compilation entries found${NC}"
+            echo -e "  ${CYAN}Run: ./nki-llama inference benchmark --clear-cache${NC}"
+        fi
+    else
+        echo -e "• Compile Cache: ${YELLOW}⚠${NC} (not found)"
+    fi
     
     if command -v neuron-ls &> /dev/null; then
         echo -e "\n${BOLD}Neuron Hardware:${NC}"
@@ -320,6 +350,24 @@ cmd_status() {
 
 cmd_clean() {
     echo -e "${YELLOW}🧹 Cleaning generated files...${NC}"
+    
+    # Show cache status first
+    CACHE_DIR="/var/tmp/neuron-compile-cache"
+    if [[ -d "$CACHE_DIR" ]]; then
+        CACHE_SIZE=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1 || echo "unknown")
+        echo -e "\nCompilation cache: ${CYAN}${CACHE_SIZE}${NC} at ${CACHE_DIR}"
+        
+        read -p "Clean compilation cache? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if rm -rf "$CACHE_DIR" 2>/dev/null; then
+                echo -e "${GREEN}✓ Compilation cache cleaned${NC}"
+            else
+                echo -e "${RED}✗ Failed to clean cache. Try: sudo rm -rf ${CACHE_DIR}${NC}"
+            fi
+        fi
+    fi
+    
     read -p "Clean fine-tuning artifacts? [y/N] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -358,28 +406,47 @@ show_help() {
     echo
     
     echo -e "${CYAN}Inference Commands:${NC}"
-    echo -e "  ./nki-llama inference setup           - Setup vLLM"
-    echo -e "  ./nki-llama inference download        - Download model"
-    echo -e "  ./nki-llama inference benchmark       - Run full benchmark (evaluate_all mode)"
-    echo -e "  ./nki-llama inference benchmark single - Run quick benchmark (evaluate_single mode)"
-    echo -e "  ./nki-llama inference server          - Start API server"
+    echo -e "  ./nki-llama inference setup             - Setup vLLM"
+    echo -e "  ./nki-llama inference download          - Download model"
+    echo -e "  ./nki-llama inference benchmark         - Run full benchmark (evaluate_all)"
+    echo -e "  ./nki-llama inference benchmark single  - Quick benchmark (evaluate_single)"
+    echo -e "  ./nki-llama inference benchmark --clear-cache  - Clear cache & benchmark"
+    echo -e "  ./nki-llama inference server            - Start API server"
     echo
     
-    echo -e "${CYAN}Benchmark Modes:${NC}"
-    echo -e "  evaluate_single - Quick validation using repository test script"
-    echo -e "  evaluate_all    - Full benchmark with NKI compilation & caching"
+    echo -e "${CYAN}Benchmark Options:${NC}"
+    echo -e "  ${BOLD}Modes:${NC}"
+    echo -e "    evaluate_single - Quick validation using repository test script"
+    echo -e "    evaluate_all    - Full benchmark with NKI compilation & caching"
+    echo
+    echo -e "  ${BOLD}Cache Management:${NC}"
+    echo -e "    --clear-cache              - Clear compilation cache before running"
+    echo -e "    --no-auto-clear-cache      - Disable automatic cache recovery"
+    echo -e "    --retry-failed-compilation - Force retry of failed compilations"
+    echo
+    echo -e "  ${BOLD}Examples:${NC}"
+    echo -e "    ./nki-llama inference benchmark                     # Full benchmark"
+    echo -e "    ./nki-llama inference benchmark single              # Quick test"
+    echo -e "    ./nki-llama inference benchmark --clear-cache       # Clean run"
+    echo -e "    ./nki-llama inference benchmark --seq-len 1024      # Custom seq length"
     echo
     
     echo -e "${CYAN}Utility Commands:${NC}"
     echo -e "  ./nki-llama status        - Show system status"
     echo -e "  ./nki-llama config        - Show configuration"
-    echo -e "  ./nki-llama clean         - Clean artifacts"
+    echo -e "  ./nki-llama clean         - Clean artifacts & cache"
     echo -e "  ./nki-llama help          - Show this help"
     echo
     
     echo -e "${CYAN}Environment Setup:${NC}"
     echo -e "  Fine-tuning: source ${NEURON_VENV}/bin/activate"
     echo -e "  Inference:   source ${NEURON_INFERENCE_VENV}/bin/activate"
+    echo
+    
+    echo -e "${CYAN}Troubleshooting:${NC}"
+    echo -e "  • Always use tmux for long operations (compile, train, benchmark)"
+    echo -e "  • If benchmark fails with cache errors, use --clear-cache"
+    echo -e "  • Check status to see if compilation cache has failed entries"
     echo
 }
 
@@ -419,11 +486,17 @@ EOF
     echo -e "3. For model benchmarking:"
     echo -e "   ${CYAN}source ${NEURON_INFERENCE_VENV}/bin/activate${NC}"
     echo -e "   ${CYAN}./nki-llama inference download${NC}"
-    echo -e "   ${CYAN}./nki-llama inference benchmark      # Full benchmark with compilation${NC}"
-    echo -e "   ${CYAN}./nki-llama inference benchmark single  # Quick single evaluation${NC}"
+    echo -e "   ${CYAN}tmux new -s benchmark  # ${YELLOW}IMPORTANT: Use tmux!${NC}"
+    echo -e "   ${CYAN}./nki-llama inference benchmark       # Full benchmark${NC}"
+    echo -e "   ${CYAN}./nki-llama inference benchmark single   # Quick test${NC}"
     echo -e "4. For inference serving:"
     echo -e "   ${CYAN}./nki-llama inference setup${NC}"
-    echo -e "   ${CYAN}./nki-llama server${NC}"
+    echo -e "   ${CYAN}./nki-llama inference server${NC}"
+    echo
+    echo -e "${YELLOW}💡 Pro Tips:${NC}"
+    echo -e "   • Always use tmux for long operations"
+    echo -e "   • Check ./nki-llama status for system health"
+    echo -e "   • Use --clear-cache if benchmark fails with cache errors"
     echo
 }
 
