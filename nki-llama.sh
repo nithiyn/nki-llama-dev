@@ -157,18 +157,81 @@ cmd_finetune_convert() {
 
 cmd_finetune_compile() {
     echo -e "${BOLD}Pre-compiling graphs...${NC}"
-    suggest_tmux "Graph Compilation" "compile-graphs" "finetune compile"
+    
+    # Check if we're in tmux
+    if [[ -z "${TMUX:-}" ]]; then
+        echo -e "${YELLOW}⚠️  Not running in tmux. ${BOLD}This is important for graph compilation!${NC}"
+        echo -e "${YELLOW}   Graph compilation can take 30-60 minutes.${NC}"
+        echo -e "${YELLOW}   Disconnections will terminate the process.${NC}"
+        echo
+        echo -e "   ${CYAN}tmux new -s compile${NC}"
+        echo -e "   ${CYAN}./nki-llama finetune compile${NC}"
+        echo
+        read -p "Continue without tmux? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}Please start tmux with: ${CYAN}tmux new -s compile${NC}"
+            exit 0
+        fi
+    fi
+    
     run_script "${NKI_FINETUNE_SCRIPTS}/precompile.sh" "Graph Compilation"
 }
 
 cmd_finetune_train() {
     echo -e "${BOLD}Starting fine-tuning...${NC}"
-    suggest_tmux "Fine-tuning" "training" "finetune train"
+    
+    # Show training information
+    echo -e "${YELLOW}💡 Fine-tuning will run for multiple hours.${NC}"
+    echo -e "${YELLOW}   The training includes checkpointing and will resume if interrupted.${NC}"
+    echo -e "${YELLOW}   Using tmux is strongly recommended!${NC}"
+    
+    # Check if we're in tmux
+    if [[ -z "${TMUX:-}" ]]; then
+        echo -e "${YELLOW}⚠️  Not running in tmux. ${BOLD}This is critical for training!${NC}"
+        echo -e "${YELLOW}   Training can take several hours to complete.${NC}"
+        echo -e "${YELLOW}   Disconnections will terminate the process (SIGHUP).${NC}"
+        echo
+        echo -e "   ${CYAN}tmux new -s training${NC}"
+        echo -e "   ${CYAN}./nki-llama finetune train${NC}"
+        echo
+        read -p "Continue without tmux? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}Please start tmux with: ${CYAN}tmux new -s training${NC}"
+            exit 0
+        fi
+    fi
+    
     run_script "${NKI_FINETUNE_SCRIPTS}/run_training.sh" "Fine-tuning"
 }
 
 cmd_finetune_all() {
     echo -e "${BOLD}Running complete fine-tuning pipeline...${NC}\n"
+    
+    # Check if we're in tmux for the entire pipeline
+    if [[ -z "${TMUX:-}" ]]; then
+        echo -e "${YELLOW}⚠️  Not running in tmux. ${BOLD}This is critical for the full pipeline!${NC}"
+        echo -e "${YELLOW}   The complete pipeline includes:${NC}"
+        echo -e "${YELLOW}   • Dependency installation${NC}"
+        echo -e "${YELLOW}   • Dataset download${NC}"
+        echo -e "${YELLOW}   • Model download${NC}"
+        echo -e "${YELLOW}   • Checkpoint conversion${NC}"
+        echo -e "${YELLOW}   • Graph compilation (30-60 min)${NC}"
+        echo -e "${YELLOW}   • Training (several hours)${NC}"
+        echo -e "${YELLOW}   Total time: 4-8 hours depending on configuration${NC}"
+        echo
+        echo -e "   ${CYAN}tmux new -s training${NC}"
+        echo -e "   ${CYAN}./nki-llama finetune all${NC}"
+        echo
+        read -p "Continue without tmux? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}Please start tmux with: ${CYAN}tmux new -s training${NC}"
+            exit 0
+        fi
+    fi
+    
     cmd_finetune_deps && \
     cmd_finetune_data && \
     cmd_finetune_model && \
@@ -482,6 +545,7 @@ EOF
     echo -e "1. Edit .env file with your Hugging Face token"
     echo -e "2. For fine-tuning:"
     echo -e "   ${CYAN}source ${NEURON_VENV}/bin/activate${NC}"
+    echo -e "   ${CYAN}tmux new -s training  # ${YELLOW}IMPORTANT: Use tmux!${NC}"
     echo -e "   ${CYAN}./nki-llama finetune all${NC}"
     echo -e "3. For model benchmarking:"
     echo -e "   ${CYAN}source ${NEURON_INFERENCE_VENV}/bin/activate${NC}"
