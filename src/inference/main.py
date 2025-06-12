@@ -103,7 +103,7 @@ def parse_args():
 
     return parser.parse_args()
 
-def parse_prompts(filepath):
+def parse_prompt_data(filepath):
     """Parse prompt performance data from JSON file"""
     with open(filepath, 'r') as file:
         data = json.load(file)
@@ -123,7 +123,7 @@ def parse_prompts(filepath):
     return prompt_data
 
 
-def parse_prompt_data(filepath):
+def parse_prompts(filepath):
     """Parse prompts from JSON file"""
     with open(filepath, 'r') as file:
         data = json.load(file)
