@@ -9,6 +9,7 @@ import glob
 import base64
 from pathlib import Path
 from typing import List, Dict, Tuple
+from datetime import datetime
 
 from neuronx_distributed_training.utils.llama_perf_estimate import calculate_mfu
 from torch_neuronx.pyhlo.hlo_pb2 import HloModuleProto
@@ -189,6 +190,9 @@ def find_all_hlo_files(compile_dir: str) -> List[str]:
     
     # Find all .hlo_module.pb files recursively
     hlo_patterns = [
+        #"*.hlo",
+        #"graph.hlo",
+        #"model.hlo_module.pb",
         "**/*.hlo_module.pb",
         "**/model.hlo_module.pb",
         "**/*.hlo",
@@ -230,45 +234,288 @@ def get_module_info(hlo_file_path: str) -> Dict[str, str]:
 
 
 def parse_training_logs(log_file: str) -> Dict:
-    """Parse training logs to extract throughput and loss information."""
+    """Parse training logs to extract throughput, loss, and timestamp information."""
     metrics = {
         'steps': [],
         'step_times': [],
         'throughputs': [],
-        'losses': []
+        'losses': [],
+        'timestamps': [],
+        'first_timestamp': None,
+        'last_timestamp': None,
+        'log_file_path': log_file,
+        'epochs': [],
+        'learning_rates': [],
+        'gradient_norms': [],
+        'consumed_samples': [],
+        'throughput_peaks': []
     }
     
     if not os.path.exists(log_file):
         print(f"Warning: Log file {log_file} not found")
         return metrics
     
+    # Get file modification time as a fallback timestamp
+    file_stat = os.stat(log_file)
+    file_mod_time = datetime.fromtimestamp(file_stat.st_mtime)
+    
     with open(log_file, 'r') as f:
         lines = f.readlines()
     
-    # Common patterns in training logs
+    # Updated patterns for the specific log format
     patterns = {
-        'step_time': r'step_time:\s*([\d.]+)',
-        'throughput': r'throughput:\s*([\d.]+)',
-        'samples_per_sec': r'samples/sec:\s*([\d.]+)',
-        'tokens_per_sec': r'tokens/sec:\s*([\d.]+)',
-        'seq_per_sec': r'seq/s:\s*([\d.]+)',
-        'loss': r'loss:\s*([\d.]+)',
-        'train_loss': r'train_loss:\s*([\d.]+)'
+        # Timestamp pattern: [2025-06-10 09:37:36.116: or [2025-06-10 09:37:36,288]
+        'timestamp': r'\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})[.,]\d+[:\]]',
+        # Progress bar pattern - matches the actual format in the logs
+        'progress_bar': r'Epoch\s+(\d+):\s*\d+%\|[█▌\s]+\|\s*\d+/\d+.*?reduced_train_loss=([\d.]+).*?lr=([\d.]+).*?global_step=([\d.]+).*?consumed_samples=([\d.]+).*?throughput=([\d.]+).*?throughput_peak=([\d.]+).*?gradient_norm=([\d.]+)',
+        # Alternative individual patterns
+        'epoch_alt': r'Epoch\s+(\d+):',
+        'throughput': r'throughput=([\d.]+)',
+        'loss': r'reduced_train_loss=([\d.]+)',
+        'global_step': r'global_step=([\d.]+)',
+        'learning_rate': r'lr=([\d.]+)',
+        'gradient_norm': r'gradient_norm=([\d.]+)',
+        'consumed_samples': r'consumed_samples=([\d.]+)',
+        'throughput_peak': r'throughput_peak=([\d.]+)',
+        # Step time if present
+        'step_time': r'step_time[:\s]+([\d.]+)'
     }
     
     for line in lines:
-        for key, pattern in patterns.items():
-            match = re.search(pattern, line)
-            if match:
-                value = float(match.group(1))
-                if key == 'step_time':
-                    metrics['step_times'].append(value)
-                elif key in ['throughput', 'samples_per_sec', 'tokens_per_sec', 'seq_per_sec']:
-                    metrics['throughputs'].append(value)
-                elif key in ['loss', 'train_loss']:
-                    metrics['losses'].append(value)
+        # Check for timestamps
+        timestamp_match = re.search(patterns['timestamp'], line)
+        if timestamp_match:
+            timestamp = timestamp_match.group(1)
+            if timestamp not in metrics['timestamps']:
+                metrics['timestamps'].append(timestamp)
+                if metrics['first_timestamp'] is None:
+                    metrics['first_timestamp'] = timestamp
+                metrics['last_timestamp'] = timestamp
+        
+        # Try to extract from progress bar format first
+        progress_match = re.search(patterns['progress_bar'], line)
+        if progress_match:
+            epoch = int(progress_match.group(1))
+            loss = float(progress_match.group(2))
+            lr = float(progress_match.group(3))
+            step = int(float(progress_match.group(4)))
+            samples = float(progress_match.group(5))
+            throughput = float(progress_match.group(6))
+            throughput_peak = float(progress_match.group(7))
+            grad_norm = float(progress_match.group(8))
+            
+            # Only add unique values
+            if epoch not in metrics['epochs']:
+                metrics['epochs'].append(epoch)
+            if step not in metrics['steps']:
+                metrics['steps'].append(step)
+            
+            # For metrics that can vary, we want all values
+            metrics['losses'].append(loss)
+            metrics['learning_rates'].append(lr)
+            metrics['consumed_samples'].append(samples)
+            metrics['throughputs'].append(throughput)
+            metrics['throughput_peaks'].append(throughput_peak)
+            metrics['gradient_norms'].append(grad_norm)
+        else:
+            # Fall back to individual pattern matching if progress bar doesn't match
+            
+            # Epoch (alternative pattern)
+            epoch_match = re.search(patterns['epoch_alt'], line)
+            if epoch_match:
+                epoch = int(epoch_match.group(1))
+                if epoch not in metrics['epochs']:
+                    metrics['epochs'].append(epoch)
+            
+            # Look for individual metrics in lines that might not have the full progress bar
+            # Only process lines that seem to contain metrics (avoid duplicate processing)
+            if 'reduced_train_loss=' in line:
+                # Loss
+                loss_match = re.search(patterns['loss'], line)
+                if loss_match:
+                    loss = float(loss_match.group(1))
+                    metrics['losses'].append(loss)
+                
+                # Learning rate
+                lr_match = re.search(patterns['learning_rate'], line)
+                if lr_match:
+                    lr = float(lr_match.group(1))
+                    metrics['learning_rates'].append(lr)
+                
+                # Global step
+                step_match = re.search(patterns['global_step'], line)
+                if step_match:
+                    step = int(float(step_match.group(1)))
+                    if step not in metrics['steps']:
+                        metrics['steps'].append(step)
+                
+                # Consumed samples
+                samples_match = re.search(patterns['consumed_samples'], line)
+                if samples_match:
+                    samples = float(samples_match.group(1))
+                    metrics['consumed_samples'].append(samples)
+                
+                # Throughput
+                throughput_match = re.search(patterns['throughput'], line)
+                if throughput_match:
+                    throughput = float(throughput_match.group(1))
+                    metrics['throughputs'].append(throughput)
+                
+                # Throughput peak
+                peak_match = re.search(patterns['throughput_peak'], line)
+                if peak_match:
+                    peak = float(peak_match.group(1))
+                    metrics['throughput_peaks'].append(peak)
+                
+                # Gradient norm
+                grad_match = re.search(patterns['gradient_norm'], line)
+                if grad_match:
+                    grad_norm = float(grad_match.group(1))
+                    metrics['gradient_norms'].append(grad_norm)
+            
+            # Step time (if present)
+            step_time_match = re.search(patterns['step_time'], line)
+            if step_time_match:
+                step_time = float(step_time_match.group(1))
+                metrics['step_times'].append(step_time)
+    
+    # Remove duplicates from lists while preserving order for some metrics
+    # For epochs and steps, we want unique values
+    metrics['epochs'] = sorted(list(set(metrics['epochs'])))
+    metrics['steps'] = sorted(list(set(metrics['steps'])))
+    
+    # For other metrics, remove consecutive duplicates but keep the progression
+    def remove_consecutive_duplicates(lst):
+        if not lst:
+            return []
+        result = [lst[0]]
+        for i in range(1, len(lst)):
+            if lst[i] != lst[i-1]:
+                result.append(lst[i])
+        return result
+    
+    metrics['losses'] = remove_consecutive_duplicates(metrics['losses'])
+    metrics['learning_rates'] = remove_consecutive_duplicates(metrics['learning_rates'])
+    metrics['consumed_samples'] = remove_consecutive_duplicates(metrics['consumed_samples'])
+    metrics['throughputs'] = remove_consecutive_duplicates(metrics['throughputs'])
+    metrics['throughput_peaks'] = remove_consecutive_duplicates(metrics['throughput_peaks'])
+    metrics['gradient_norms'] = remove_consecutive_duplicates(metrics['gradient_norms'])
+    
+    # If no timestamps found in logs, use file modification time
+    if not metrics['timestamps']:
+        metrics['file_modification_time'] = file_mod_time.strftime('%Y-%m-%d %H:%M:%S')
     
     return metrics
+
+
+def display_log_metrics(log_metrics: Dict) -> None:
+    """Display parsed log metrics in a formatted way."""
+    print("\n" + "="*60)
+    print("LOG FILE METRICS SUMMARY")
+    print("="*60)
+    
+    if log_metrics['log_file_path']:
+        print(f"Log file: {log_metrics['log_file_path']}")
+    
+    # Display timestamp information
+    if log_metrics['first_timestamp'] or log_metrics['last_timestamp']:
+        print(f"\nTraining Timeline:")
+        if log_metrics['first_timestamp']:
+            print(f"  First timestamp: {log_metrics['first_timestamp']}")
+        if log_metrics['last_timestamp']:
+            print(f"  Last timestamp: {log_metrics['last_timestamp']}")
+        if log_metrics['first_timestamp'] and log_metrics['last_timestamp']:
+            # Try to calculate duration
+            try:
+                first_dt = datetime.strptime(log_metrics['first_timestamp'], '%Y-%m-%d %H:%M:%S')
+                last_dt = datetime.strptime(log_metrics['last_timestamp'], '%Y-%m-%d %H:%M:%S')
+                duration = last_dt - first_dt
+                print(f"  Duration: {duration}")
+            except:
+                pass
+    elif 'file_modification_time' in log_metrics:
+        print(f"\nLog file last modified: {log_metrics['file_modification_time']}")
+    
+    # Display epoch information
+    if log_metrics['epochs']:
+        print(f"\nEpoch Information:")
+        print(f"  Epochs recorded: {len(log_metrics['epochs'])}")
+        print(f"  First epoch: {min(log_metrics['epochs'])}")
+        print(f"  Last epoch: {max(log_metrics['epochs'])}")
+    
+    # Display step information
+    if log_metrics['steps']:
+        print(f"\nTraining Steps:")
+        print(f"  Total steps recorded: {len(log_metrics['steps'])}")
+        print(f"  First step: {min(log_metrics['steps'])}")
+        print(f"  Last step: {max(log_metrics['steps'])}")
+    
+    # Display consumed samples
+    if log_metrics['consumed_samples']:
+        print(f"\nConsumed Samples:")
+        print(f"  First: {min(log_metrics['consumed_samples']):,.0f}")
+        print(f"  Last: {max(log_metrics['consumed_samples']):,.0f}")
+        print(f"  Total processed: {max(log_metrics['consumed_samples']) - min(log_metrics['consumed_samples']):,.0f}")
+    
+    # Display step time statistics
+    if log_metrics['step_times']:
+        avg_step_time = sum(log_metrics['step_times']) / len(log_metrics['step_times'])
+        print(f"\nStep Time Statistics:")
+        print(f"  Average: {avg_step_time:.3f} seconds")
+        print(f"  Min: {min(log_metrics['step_times']):.3f} seconds")
+        print(f"  Max: {max(log_metrics['step_times']):.3f} seconds")
+        print(f"  Number of measurements: {len(log_metrics['step_times'])}")
+    
+    # Display throughput statistics
+    if log_metrics['throughputs']:
+        avg_throughput = sum(log_metrics['throughputs']) / len(log_metrics['throughputs'])
+        print(f"\nThroughput Statistics:")
+        print(f"  Average: {avg_throughput:.3f} seq/s")
+        print(f"  Min: {min(log_metrics['throughputs']):.3f} seq/s")
+        print(f"  Max: {max(log_metrics['throughputs']):.3f} seq/s")
+        print(f"  Number of measurements: {len(log_metrics['throughputs'])}")
+    
+    # Display throughput peak statistics
+    if log_metrics['throughput_peaks']:
+        avg_peak = sum(log_metrics['throughput_peaks']) / len(log_metrics['throughput_peaks'])
+        print(f"\nThroughput Peak Statistics:")
+        print(f"  Average: {avg_peak:.3f} seq/s")
+        print(f"  Min: {min(log_metrics['throughput_peaks']):.3f} seq/s")
+        print(f"  Max: {max(log_metrics['throughput_peaks']):.3f} seq/s")
+    
+    # Display loss statistics
+    if log_metrics['losses']:
+        avg_loss = sum(log_metrics['losses']) / len(log_metrics['losses'])
+        print(f"\nLoss Statistics:")
+        print(f"  Average: {avg_loss:.4f}")
+        print(f"  Min: {min(log_metrics['losses']):.4f}")
+        print(f"  Max: {max(log_metrics['losses']):.4f}")
+        print(f"  First loss: {log_metrics['losses'][0]:.4f}")
+        print(f"  Last loss: {log_metrics['losses'][-1]:.4f}")
+        print(f"  Number of measurements: {len(log_metrics['losses'])}")
+        
+        # Check if loss is decreasing
+        if len(log_metrics['losses']) > 1:
+            loss_trend = "decreasing" if log_metrics['losses'][-1] < log_metrics['losses'][0] else "increasing"
+            print(f"  Loss trend: {loss_trend}")
+    
+    # Display learning rate statistics
+    if log_metrics['learning_rates']:
+        print(f"\nLearning Rate Statistics:")
+        print(f"  First: {log_metrics['learning_rates'][0]:.6f}")
+        print(f"  Last: {log_metrics['learning_rates'][-1]:.6f}")
+        print(f"  Min: {min(log_metrics['learning_rates']):.6f}")
+        print(f"  Max: {max(log_metrics['learning_rates']):.6f}")
+    
+    # Display gradient norm statistics
+    if log_metrics['gradient_norms']:
+        avg_grad = sum(log_metrics['gradient_norms']) / len(log_metrics['gradient_norms'])
+        print(f"\nGradient Norm Statistics:")
+        print(f"  Average: {avg_grad:.4f}")
+        print(f"  Min: {min(log_metrics['gradient_norms']):.4f}")
+        print(f"  Max: {max(log_metrics['gradient_norms']):.4f}")
+    
+    print("="*60)
 
 
 def analyze_hlo_file(hlo_file: str) -> Dict:
@@ -463,16 +710,18 @@ def main():
     else:
         seq_len = cfg['data']['seq_length']
     
+    # Parse log file and display metrics if provided
+    log_metrics = None
+    if args.log_file:
+        log_metrics = parse_training_logs(args.log_file)
+        display_log_metrics(log_metrics)
+    
     # Determine throughput
     if args.throughput:
         throughput = args.throughput
-    elif args.log_file:
-        log_metrics = parse_training_logs(args.log_file)
-        if log_metrics['throughputs']:
-            throughput = sum(log_metrics['throughputs']) / len(log_metrics['throughputs'])
-        else:
-            print("Warning: Could not extract throughput from logs, using default")
-            throughput = 100.0  # Default estimate
+    elif args.log_file and log_metrics and log_metrics['throughputs']:
+        throughput = sum(log_metrics['throughputs']) / len(log_metrics['throughputs'])
+        print(f"\nUsing average throughput from log file: {throughput:.2f} seq/s")
     else:
         print("Warning: No throughput information provided, using default")
         throughput = 100.0  # Default estimate
@@ -565,6 +814,42 @@ def main():
             "summary": hlo_analysis['summary']
         }
     }
+    
+    # Add log metrics to output if available
+    if log_metrics:
+        metrics["log_metrics"] = {
+            "log_file": log_metrics['log_file_path'],
+            "timestamps": {
+                "first": log_metrics['first_timestamp'],
+                "last": log_metrics['last_timestamp'],
+                "file_modification": log_metrics.get('file_modification_time')
+            },
+            "steps": {
+                "count": len(log_metrics['steps']),
+                "first": min(log_metrics['steps']) if log_metrics['steps'] else None,
+                "last": max(log_metrics['steps']) if log_metrics['steps'] else None
+            },
+            "step_times": {
+                "average": sum(log_metrics['step_times']) / len(log_metrics['step_times']) if log_metrics['step_times'] else None,
+                "min": min(log_metrics['step_times']) if log_metrics['step_times'] else None,
+                "max": max(log_metrics['step_times']) if log_metrics['step_times'] else None,
+                "count": len(log_metrics['step_times'])
+            },
+            "throughput": {
+                "average": sum(log_metrics['throughputs']) / len(log_metrics['throughputs']) if log_metrics['throughputs'] else None,
+                "min": min(log_metrics['throughputs']) if log_metrics['throughputs'] else None,
+                "max": max(log_metrics['throughputs']) if log_metrics['throughputs'] else None,
+                "count": len(log_metrics['throughputs'])
+            },
+            "losses": {
+                "average": sum(log_metrics['losses']) / len(log_metrics['losses']) if log_metrics['losses'] else None,
+                "min": min(log_metrics['losses']) if log_metrics['losses'] else None,
+                "max": max(log_metrics['losses']) if log_metrics['losses'] else None,
+                "first": log_metrics['losses'][0] if log_metrics['losses'] else None,
+                "last": log_metrics['losses'][-1] if log_metrics['losses'] else None,
+                "count": len(log_metrics['losses'])
+            }
+        }
     
     # Add detailed per-file metrics if requested
     if args.detailed:

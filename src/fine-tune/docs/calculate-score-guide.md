@@ -1,6 +1,6 @@
 # Training Metrics Calculator
 
-A comprehensive tool for calculating training metrics including Model FLOPs Utilization (MFU), NKI (Neuron Kernel Interface) usage analysis, and training performance scores from AWS Neuron training logs and HLO files.
+A tool for calculating training metrics including Model FLOPs Utilization (MFU), NKI (Neuron Kernel Interface) usage analysis, and training performance scores from AWS Neuron training logs and HLO files.
 
 ## Overview
 
@@ -26,9 +26,12 @@ This tool analyzes training performance on AWS Trainium instances by:
 
 ```bash
 source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
-python calculate_training_metrics.py \
+
+# Get report over all training jobs in neuron_cache directory
+python /home/ubuntu/nki-llama/src/fine-tune/scripts/calculate_training_metrics.py \
       --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
       --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
+      --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
       --compile-dir /home/ubuntu/neuron_cache \
       --throughput 2.1 \
       --hw-backend trn1 \
@@ -36,7 +39,21 @@ python calculate_training_metrics.py \
       --per-file-scores \
       --detailed \
       --print-per-file \
-      --output baseline_metrics.json
+      --output benchmark_finetuning.json
+
+# Get report over a training job in neuron_cache directory
+python /home/ubuntu/nki-llama/src/fine-tune/scripts/calculate_training_metrics.py \
+      --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
+      --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
+      --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
+      --compile-dir /home/ubuntu/neuron_cache/neuronxcc-2.18.121.0+9e31e41a/MODULE_15329989265349737271+a65e371e \
+      --throughput 2.1 \
+      --hw-backend trn1 \
+      --calculate-score \
+      --per-file-scores \
+      --detailed \
+      --print-per-file \
+      --output benchmark_finetuning.json
 ```
 
 ### Basic Usage
