@@ -60,7 +60,7 @@ NKI-LLAMA provides a streamlined interface for the complete LLM development life
 ### 2. Installation
 ```bash
 # Clone repository
-git clone https://github.com/your-org/nki-llama.git
+git clone https://github.com/aws-neuron/nki-llama.git
 cd nki-llama
 
 # Install
@@ -361,7 +361,7 @@ nki-llama/
 │       ├── main.py       # Benchmark entry point
 │       └── scripts/      # Inference automation
 ├── notebooks/            # Example notebooks
-│   └── travel_agent.ipynb
+│   └── neuron_agents.ipynb
 ├── logs/                 # Operation logs
 │   └── benchmarks/       # Benchmark results
 └── models/              # Downloaded models
