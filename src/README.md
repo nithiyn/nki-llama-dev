@@ -6,8 +6,12 @@ A benchmarking system for evaluating NKI-LLAMA model performance across both tra
 
 The NKI-LLAMA Benchmark Handler calculates a unified performance score that combines:
 - **Training metrics**: MFU (Model FLOPs Utilization), throughput, and NKI kernel usage
-- **Inference metrics**: Latency, throughput, and accuracy
+- **Inference metrics**: Latency, throughput, and accuracy (optional)
 - **NKI optimization**: Ratio of NKI (Neuron Kernel Interface) operations to total operations
+
+The system supports two modes:
+- **Training-only mode**: When inference results are not available, provides NKI kernel training score
+- **Combined mode**: When both training and inference results are available, provides full NKI-LLAMA score
 
 The final score follows the formula:
 ```
@@ -25,15 +29,42 @@ python handler.py
 
 This will:
 1. Calculate training metrics using `calculate_training_metrics.py`
-2. Load inference results from `benchmark_inference.json`
-3. Calculate the combined NKI-LLAMA score
+2. Load inference results from `benchmark_inference.json` (if available)
+3. Calculate the NKI-LLAMA score (combined or training-only)
 4. Save results to `benchmark_results.json`
+
+### Training-Only Mode
+
+If the inference benchmark file doesn't exist, the handler automatically runs in training-only mode:
+```bash
+python handler.py --calculate-score
+```
+
+This provides immediate feedback on NKI kernel optimization progress without requiring inference implementation.
 
 ### Advanced Usage
 
 #### Custom Training Configuration
 ```bash
-python src/handler.py \
+python /home/ubuntu/nki-llama/src/handler.py \
+    --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
+    --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
+    --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
+    --compile-dir /home/ubuntu/neuron_cache/neuronxcc-2.18.121.0+9e31e41a/MODULE_15329989265349737271+a65e371e \
+    --throughput 2.1 \
+    --output benchmark_results.json \
+    --training-weight 0.5 \
+    --inference-weight 0.5 \
+    --hw-backend trn1 \
+    --per-file-scores \
+    --calculate-score \
+    --detailed \
+    --verbose
+```
+
+#### Custom Inference Results
+```bash
+python /home/ubuntu/nki-llama/src/handler.py \
     --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
     --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
     --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
@@ -48,14 +79,6 @@ python src/handler.py \
     --calculate-score \
     --detailed \
     --verbose
-```
-
-#### Custom Inference Results
-```bash
-python handler.py \
-    --inference-results my_inference_results.json \
-    --reference-latency 60000 \
-    --reference-throughput 15
 ```
 
 #### Adjust Score Weights
@@ -86,7 +109,7 @@ python handler.py --verbose
 #### Inference Metrics Options
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--inference-results` | `benchmark_inference.json` | Inference benchmark results file |
+| `--inference-results` | `benchmark_inference.json` | Inference benchmark results file (optional - if not provided, only training score is calculated) |
 | `--reference-latency` | `50000` | Reference implementation latency (ms) |
 | `--reference-throughput` | `10` | Reference implementation throughput (tokens/s) |
 
@@ -99,13 +122,13 @@ python handler.py --verbose
 #### Output Options
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--output` | `benchmark.json` | Output file for combined results |
+| `--output` | `benchmark_results.json` | Output file for combined results |
 | `--training-output` | `benchmark_finetuning.json` | Output file for training metrics |
 | `--verbose` | `False` | Enable verbose output |
 
 ## 📊 Output Format
 
-### Console Output
+### Console Output - Combined Mode
 ```
 ======================================================================
 NKI-LLAMA BENCHMARK RESULTS
@@ -138,11 +161,36 @@ Score Weights:
 ======================================================================
 ```
 
+### Console Output - Training-Only Mode
+```
+======================================================================
+NKI-LLAMA BENCHMARK RESULTS
+======================================================================
+
+⚠️  TRAINING-ONLY MODE (Inference results not available)
+
+🏆 NKI KERNEL TRAINING SCORE: 0.0077
+   NKI Ratio: 0.1846
+
+🎯 Training Metrics:
+  MFU: 15.48% (baseline: 50.00%)
+  Throughput: 2.10 seq/s (baseline: 100.00)
+  MFU Improvement: 0.3095x
+  Throughput Improvement: 0.0210x
+
+💡 Note: This score represents training performance only.
+   To get the full NKI-LLAMA score, run inference benchmarks and provide
+   the results file using --inference-results option.
+
+======================================================================
+```
+
 ### JSON Output (`benchmark_results.json`)
 ```json
 {
   "timestamp": "2025-01-01T12:00:00",
-  "nki_llama_score": 0.0046,
+  "mode": "combined",
+  "nki_kernel_score": 0.0046,
   "component_scores": {
     "training": 0.0077,
     "inference": 0.0026
@@ -204,9 +252,9 @@ Score Weights:
    python handler.py --verbose  # Shows detailed error messages
    ```
 
-2. **Missing `benchmark_inference.json`**: Run inference benchmarks first
+2. **Missing `benchmark_inference.json`**: The handler will automatically run in training-only mode
    ```bash
-   # Create a sample inference results file
+   # To create a sample inference results file for testing:
    echo '{"e2e_model": {"latency_ms_avg": 12131.49, "throughput": 52.76}}' > benchmark_inference.json
    ```
 

@@ -137,22 +137,39 @@ check_failed_cache_entries() {
 # Function to run evaluate_single mode
 run_evaluate_single() {
     echo -e "${YELLOW}🔧 Running benchmark in evaluate_single mode...${NC}"
-    echo -e "${YELLOW}This mode runs from repository test script for single evaluation.${NC}"
+    echo -e "${YELLOW}This mode runs single evaluation with NKI optimizations.${NC}"
     
-    # Change to home directory and run the test script
-    cd ~
+    # Change to inference directory
+    cd "${NKI_INFERENCE}"
     
     # Build command
-    CMD="python ${NKI_ROOT}/test/inference/test.py"
-    CMD="${CMD} --repository-path ${NKI_ROOT}"
+    CMD="python main.py"
+    CMD="${CMD} --mode evaluate_single"
+    CMD="${CMD} --model-path ${MODEL_PATH}"
+    CMD="${CMD} --compiled-model-path ${COMPILED_MODEL_PATH}"
+    CMD="${CMD} --seq-len ${SEQ_LEN}"
+    CMD="${CMD} --tp-degree ${TP_DEGREE}"
     
-    # Execute with timing
+    if [[ "$ENABLE_NKI" == "true" ]]; then
+        CMD="${CMD} --enable-nki"
+    fi
+    
+    if [[ "$RETRY_FAILED" == "true" ]]; then
+        CMD="${CMD} --retry-failed-compilation"
+    fi
+    
+    # Execute with timing and error handling
     echo -e "${BLUE}Executing evaluate_single benchmark...${NC}"
+    echo -e "${BLUE}${CMD}${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
     START_TIME=$(date +%s)
     
-    if $CMD 2>&1 | tee "${BENCHMARK_LOG_DIR}/benchmark.log"; then
+    # Create a temporary file to capture the output
+    TEMP_LOG=$(mktemp)
+    
+    # Run command and capture both stdout/stderr
+    if $CMD 2>&1 | tee "${BENCHMARK_LOG_DIR}/benchmark.log" | tee "$TEMP_LOG"; then
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
         
@@ -161,9 +178,69 @@ run_evaluate_single() {
         echo -e "${GREEN}✓ evaluate_single benchmark completed successfully!${NC}"
         echo -e "Total time: ${DURATION} seconds"
         
+        # If compilation happened, show artifact info
+        if [[ -d "$COMPILED_MODEL_PATH" ]]; then
+            echo
+            echo -e "${GREEN}✓ NKI-compiled model artifacts available at:${NC}"
+            echo -e "   ${COMPILED_MODEL_PATH}"
+            echo
+            echo -e "${BLUE}These artifacts can now be used for:${NC}"
+            echo -e "  • vLLM inference with NxDI optimizations"
+            echo -e "  • Direct inference benchmarks"
+            echo -e "  • Production deployments"
+            echo
+        fi
+        
+        rm -f "$TEMP_LOG"
         return 0
     else
-        echo -e "${RED}✗ evaluate_single benchmark failed!${NC}"
+        # Check if it's a cache-related failure
+        if grep -q "Got a cached failed neff" "$TEMP_LOG" || grep -q "SIGHUP" "$TEMP_LOG"; then
+            echo
+            echo -e "${RED}✗ evaluate_single benchmark failed due to compilation cache issues!${NC}"
+            
+            if [[ "$AUTO_CLEAR_CACHE" == "true" ]]; then
+                echo -e "${YELLOW}🔄 Attempting automatic cache recovery...${NC}"
+                echo
+                
+                # Clear the cache
+                if clear_compilation_cache; then
+                    echo
+                    echo -e "${YELLOW}🔄 Retrying benchmark with clean cache...${NC}"
+                    echo
+                    
+                    # Retry the command
+                    if $CMD 2>&1 | tee "${BENCHMARK_LOG_DIR}/benchmark_retry.log"; then
+                        END_TIME=$(date +%s)
+                        DURATION=$((END_TIME - START_TIME))
+                        
+                        echo
+                        echo -e "${GREEN}✓ evaluate_single benchmark completed successfully after cache clear!${NC}"
+                        echo -e "Total time: ${DURATION} seconds"
+                        
+                        rm -f "$TEMP_LOG"
+                        return 0
+                    else
+                        echo -e "${RED}✗ Benchmark still failed after cache clear${NC}"
+                    fi
+                else
+                    echo -e "${RED}✗ Could not clear cache automatically${NC}"
+                fi
+            else
+                echo
+                echo -e "${YELLOW}💡 Suggestions to fix:${NC}"
+                echo -e "   1. Clear the compilation cache:"
+                echo -e "      ${CYAN}rm -rf ${NEURON_CACHE_DIR}${NC}"
+                echo -e "   2. Re-run with auto cache clearing:"
+                echo -e "      ${CYAN}$0 --mode evaluate_single --clear-cache${NC}"
+                echo -e "   3. Force retry failed compilations:"
+                echo -e "      ${CYAN}$0 --mode evaluate_single --retry-failed-compilation${NC}"
+            fi
+        else
+            echo -e "${RED}✗ evaluate_single benchmark failed!${NC}"
+        fi
+        
+        rm -f "$TEMP_LOG"
         return 1
     fi
 }
@@ -308,7 +385,7 @@ run_benchmark() {
     fi
     
     # Check prerequisites based on mode
-    if [[ "$MODE" == "evaluate_all" ]]; then
+    if [[ "$MODE" == "evaluate_all" ]] || [[ "$MODE" == "evaluate_single" ]]; then
         check_model
     fi
     
@@ -407,8 +484,8 @@ show_info() {
     echo -e "This tool supports two benchmark modes:"
     echo
     echo -e "${YELLOW}1. evaluate_single mode:${NC}"
-    echo -e "   • Runs benchmark from repository test script"
-    echo -e "   • Single evaluation configuration"
+    echo -e "   • Runs single evaluation configuration"
+    echo -e "   • Tests with NKI optimizations"
     echo -e "   • Quick validation of model performance"
     echo
     echo -e "${YELLOW}2. evaluate_all mode:${NC}"

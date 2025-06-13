@@ -60,7 +60,7 @@ NKI-LLAMA provides a streamlined interface for the complete LLM development life
 ### 2. Installation
 ```bash
 # Clone repository
-git clone https://github.com/your-org/nki-llama.git
+git clone https://github.com/aws-neuron/nki-llama.git
 cd nki-llama
 
 # Install
@@ -85,6 +85,84 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 tmux new -s benchmark
 ./nki-llama inference benchmark
 ```
+
+## 📊 Score Calculation Workflow
+
+The NKI-LLAMA platform includes a comprehensive score calculation system that evaluates both training and inference performance. For detailed information about the scoring system, see the [Score Calculation README](src/README.md).
+
+### Workflow Overview
+
+1. **Pre-compile Phase**: 
+   - Execute the pre-compile job using `./nki-llama finetune compile`
+   - This generates a compile directory in the neuron cache
+   - The pre-compile job creates a log file in `logs/nki-llama_*.log`
+   - **Important**: Note the compile directory path from the "Pre-compile graphs" log output
+   - Example: `/home/ubuntu/neuron_cache/neuronxcc-2.18.121.0+9e31e41a/MODULE_15329989265349737271+a65e371e`
+
+2. **Training Execution**:
+   - Execute the pre-compile job using `./nki-llama finetune train`
+   - The training job creates a log file in `logs/nki-llama_*.log`
+   - This log contains metrics like latency, throughput, and MFU
+   - The benchmark inference file is always generated at: `benchmark_inference.json`
+
+3. **Score Collection**:
+   - Once training completes, scores can be calculated using the handler
+   - If only training is done, you'll get the NKI kernel training score
+   - If both training and inference are complete, you'll get the full NKI-LLAMA score
+
+### Example Test Run
+
+```bash
+# Step 1: Run full fine-tuning job and note the compile directory
+tmux new -s training
+source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
+./nki-llama finetune all
+# Look for "Pre-compile graphs" in output to find compile directory path
+
+# Step 2: Run inference benchmark (optional for full score)
+tmux new -s benchmark
+source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
+./nki-llama inference benchmark
+
+# Step 3: Calculate scores
+# For training-only score:
+python /home/ubuntu/nki-llama/src/handler.py \
+    --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
+    --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
+    --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
+    --compile-dir /home/ubuntu/neuron_cache/neuronxcc-2.18.121.0+9e31e41a/MODULE_15329989265349737271+a65e371e \
+    --throughput 2.1 \
+    --output benchmark_results.json \
+    --training-weight 0.5 \
+    --inference-weight 0.5 \
+    --hw-backend trn1 \
+    --per-file-scores \
+    --calculate-score \
+    --detailed \
+    --verbose
+
+# For full score (with inference):
+python /home/ubuntu/nki-llama/src/handler.py \
+    --config /home/ubuntu/nki-llama/src/fine-tune/neuronx-distributed-training/examples/conf/hf_llama3_8B_SFT_config.yaml \
+    --model-config /home/ubuntu/nki-llama/src/fine-tune/configs/model-config/8B_config_llama3-1/config.json \
+    --log-file /home/ubuntu/nki-llama/logs/nki-llama_20250610_014432.log \
+    --compile-dir /home/ubuntu/neuron_cache/neuronxcc-2.18.121.0+9e31e41a/MODULE_15329989265349737271+a65e371e \
+    --inference-results /home/ubuntu/nki-llama/src/inference/benchmark_inference.json \
+    --throughput 2.1 \
+    --output benchmark_results.json \
+    --training-weight 0.5 \
+    --inference-weight 0.5 \
+    --hw-backend trn1 \
+    --per-file-scores \
+    --calculate-score \
+    --detailed \
+    --verbose
+```
+
+The score calculation provides insights into:
+- **Training Performance**: MFU improvement and throughput gains
+- **Inference Performance**: Latency reduction and throughput increase
+- **NKI Optimization**: Ratio of NKI-optimized operations
 
 ## 💻 Command Reference
 
@@ -275,13 +353,15 @@ nki-llama/
 ├── install.sh            # Installation script
 ├── README.md             # This file
 ├── src/
+│   ├── README.md         # Score calculation documentation
+│   ├── handler.py        # Score calculation handler
 │   ├── fine-tune/        # Training pipeline
 │   │   └── scripts/      # Training automation
 │   └── inference/        # Inference pipeline
 │       ├── main.py       # Benchmark entry point
 │       └── scripts/      # Inference automation
 ├── notebooks/            # Example notebooks
-│   └── travel_agent.ipynb
+│   └── neuron_agents.ipynb
 ├── logs/                 # Operation logs
 │   └── benchmarks/       # Benchmark results
 └── models/              # Downloaded models
@@ -322,6 +402,7 @@ MAX_MODEL_LEN=2048
 tmux new -s training
 source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 ./nki-llama finetune all
+# Note the compile directory from "Pre-compile graphs" output
 # Detach: Ctrl+B, D
 ```
 
@@ -335,16 +416,26 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 # Detach: Ctrl+B, D
 ```
 
-### Step 3: Serve Model
+### Step 3: Calculate Performance Score
 ```bash
-tmux new -s server
+# After training and/or inference completes
+python /home/ubuntu/nki-llama/src/handler.py \
+    --compile-dir /path/from/training/logs \
+    --log-file logs/nki-llama_latest.log \
+    --inference-results benchmark_inference.json \
+    --calculate-score
+```
+
+### Step 4: Serve Model
+```bash
+tmux new -s vllm-server
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 ./nki-llama inference server
 # API available at http://localhost:8080
 # Detach: Ctrl+B, D
 ```
 
-### Step 4: Build Applications
+### Step 5: Build Applications
 ```bash
 # Terminal 1: Keep server running
 # Terminal 2: Development
@@ -361,7 +452,6 @@ source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
 
 ## 🐛 Known Issues
 
-- **evaluate_single mode**: Currently not implemented. Use default `evaluate_all` mode for all benchmarking.
 - **First compilation**: Initial NKI compilation can take 10-30 minutes. Subsequent runs use cache.
 - **Cache corruption**: If benchmark fails with cache errors, use `--clear-cache` flag.
 

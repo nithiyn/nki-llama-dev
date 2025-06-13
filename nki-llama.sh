@@ -304,6 +304,7 @@ cmd_inference_benchmark() {
     fi
     
     echo -e "${YELLOW}   Using tmux is strongly recommended!${NC}"
+    echo -e "${YELLOW}   Running: ${NKI_INFERENCE_SCRIPTS}/run-nki-benchmark.sh --mode $mode ${args[@]}"
     
     # Check if we're in tmux for evaluate_all mode
     if [[ "$mode" == "evaluate_all" ]] && [[ -z "${TMUX:-}" ]]; then
