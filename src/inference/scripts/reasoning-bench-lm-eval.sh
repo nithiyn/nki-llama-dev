@@ -1,49 +1,70 @@
-#!/bin/bash
-# reasoning-bench-lm-eval.sh - Start vLLM OpenAI-compatible API server and run lm-eval
+#!/usr/bin/env bash
+# reasoning-bench-lm-eval.sh ─ Start vLLM (Neuron) server and run lm-eval reasoning bench
 
 set -euo pipefail
 
-# Load configuration
+# ---------------------------------------------------------------------
+# 0. Config + constants
+# ---------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../../../nki-llama.config"
+source "${SCRIPT_DIR}/../../../nki-llama.config"          # sets: VLLM_REPO, NEURON_INFERENCE_VENV, …
 
-# Colors
+# Where we keep AWS Neuron samples
+REASONING_BENCH_DIR="$HOME/aws-neuron-samples"
+
+# Colours
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${GREEN}Setting up vLLM for Neuron...${NC}"
+echo -e "${GREEN}Setting up vLLM for Neuron …${NC}"
 
-# Check if in correct environment
-if [[ "$VIRTUAL_ENV" != *"inference"* ]]; then
-    echo -e "${RED}Error: Not in inference environment${NC}"
-    echo -e "Run: source ${NEURON_INFERENCE_VENV}/bin/activate"
-    exit 1
+# ---------------------------------------------------------------------
+# 1. Sanity check: are we inside the inference venv?
+# ---------------------------------------------------------------------
+if [[ "${VIRTUAL_ENV:-}" != *"inference"* ]]; then
+  echo -e "${RED}Error:${NC} not inside Neuron inference venv"
+  echo    "Run: source ${NEURON_INFERENCE_VENV}/bin/activate"
+  exit 1
 fi
 
-# Clone or update vLLM repository
+# ---------------------------------------------------------------------
+# 2. Clone or update vLLM repo
+# ---------------------------------------------------------------------
 if [[ -d "$VLLM_REPO" ]]; then
-    echo "Updating existing vLLM repository..."
-    cd "$VLLM_REPO"
-    git fetch
-    git pull
+  echo "Updating existing vLLM repo …"
+  git -C "$VLLM_REPO" pull --ff-only
 else
-    echo "Cloning vLLM repository..."
-    cd "$(dirname "$VLLM_REPO")"
-    git clone https://github.com/vllm-project/vllm.git
+  echo "Cloning vLLM repo …"
+  git clone https://github.com/vllm-project/vllm.git "$VLLM_REPO"
 fi
 
-# Install requirements
 cd "$VLLM_REPO"
-echo "Installing vLLM requirements..."
-pip install -U -r requirements/neuron.txt
 
-# Install vLLM
-echo "Installing vLLM for Neuron..."
-VLLM_TARGET_DEVICE="neuron" pip install -e .
+# ---------------------------------------------------------------------
+# 3. Install dependencies once, refresh editable install each run
+#    • If 'vllm' importable  → skip deps, just refresh metadata
+#    • Else                 → first run: install deps + editable
+# ---------------------------------------------------------------------
+if python - <<'PY' >/dev/null 2>&1
+import importlib.util, sys
+sys.exit(0 if importlib.util.find_spec("vllm") else 1)
+PY
+then
+  echo "vLLM already importable – skipping heavy deps install"
+  VLLM_TARGET_DEVICE="neuron" \
+      pip install --quiet --no-deps -e . --exists-action=i
+else
+  echo "Installing vLLM Neuron deps (first run) …"
+  pip install --quiet -r requirements/neuron.txt
+  VLLM_TARGET_DEVICE="neuron" pip install --quiet -e .
+fi
 
-# Ensure transformers < 4.50 (needed by Neuron hf_adapter)
+# ---------------------------------------------------------------------
+# 4. Ensure transformers < 4.50 for Neuron hf_adapter
+# ---------------------------------------------------------------------
 python - <<'PY'
 import subprocess, pkg_resources, sys
 req = "4.50.0"
@@ -52,31 +73,32 @@ try:
 except pkg_resources.DistributionNotFound:
     ver = ""
 if not ver or pkg_resources.parse_version(ver) >= pkg_resources.parse_version(req):
-    print("Installing transformers<%s …" % req)
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", f"transformers<{req}"])
+    print(f"Installing transformers<{req} …")
+    subprocess.check_call([sys.executable, "-m", "pip", "install",
+                           "--quiet", f"transformers<{req}"])
 PY
 
-echo -e "${GREEN}✓ vLLM setup complete${NC}"
+echo -e "${GREEN}✓ vLLM (Neuron) ready${NC}"
 
-cd "$HOME"
-git clone https://github.com/aws-neuron/aws-neuron-samples.git
-cd /home/ubuntu/aws-neuron-samples/inference-benchmarking/
-pip install -r requirements.txt --quiet
-
-echo -e "${GREEN}✓ Inference-Benchmarking setup complete${NC}"
-
-#write config file for reasoning test
-cd /home/ubuntu/aws-neuron-samples/inference-benchmarking/
-
-if test -f "/home/ubuntu/aws-neuron-samples/inference-benchmarking/reasoning_bench.yaml"; then
-   echo "config file exists."
-else 
-    echo "Creating config file..."
+# ---------------------------------------------------------------------
+# 5. Clone/refresh aws-neuron-samples + its deps
+# ---------------------------------------------------------------------
+if [[ -d "$REASONING_BENCH_DIR" ]]; then
+  echo "Updating aws-neuron-samples repo …"
+  git -C "$REASONING_BENCH_DIR" pull --ff-only
+else
+  git clone https://github.com/aws-neuron/aws-neuron-samples.git \
+            "$REASONING_BENCH_DIR"
 fi
 
-OUT_FILE="reasoning_bench.yaml" 
-cat > "$OUT_FILE" <<YAML
+cd "$REASONING_BENCH_DIR/inference-benchmarking"
+pip install --quiet -r requirements.txt
+echo -e "${GREEN}✓ Inference-Benchmarking deps ready${NC}"
 
+# ---------------------------------------------------------------------
+# 6. Write (or overwrite) reasoning_bench.yaml
+# ---------------------------------------------------------------------
+cat > reasoning_bench.yaml <<YAML
 server:
   name: "Reasoning-benchmark server"
   model_path: "${NKI_MODELS}/${MODEL_NAME}"
@@ -99,16 +121,15 @@ test:
       client_params:
         limit: 200
         use_chat: True
-
 YAML
+echo -e "${GREEN}✓ Config file written${NC}"
 
-#config file written
-echo -e "${GREEN}✓ Config File written${NC}"
-
-#run reasoning benchmark
-echo -e "${GREEN}Starting Reasoning Benchmarking job...${NC}"
-echo $"{BLUE}----- reasoning_bench.yaml -----${NC}"
+# ---------------------------------------------------------------------
+# 7. Run the benchmark
+# ---------------------------------------------------------------------
+echo -e "${BLUE}----- reasoning_bench.yaml -----${NC}"
 cat reasoning_bench.yaml
 echo
 
+echo -e "${GREEN}Starting Reasoning Benchmark …${NC}"
 python accuracy.py --config reasoning_bench.yaml
