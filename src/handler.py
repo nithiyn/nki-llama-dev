@@ -75,20 +75,6 @@ class NKILlamaHandler:
         if cmd_args.get("print_per_file"):
             cmd.append("--print-per-file")
             
-        # Add scoring thresholds
-        if cmd_args.get("base_mfu"):
-            pass
-            # cmd.extend(["--base-mfu", str(cmd_args["base_mfu"])])
-        if cmd_args.get("base_throughput"):
-            pass
-            #cmd.extend(["--base-throughput", str(cmd_args["base_throughput"])])
-        if cmd_args.get("loss_improvement"):
-            pass
-            #cmd.extend(["--loss-improvement", str(cmd_args["loss_improvement"])])
-        if cmd_args.get("convergence_rate"):
-            pass
-            #cmd.extend(["--convergence-rate", str(cmd_args["convergence_rate"])])
-            
         # Output file
         output_file = cmd_args.get("output", "benchmark_finetuning.json")
         cmd.extend(["--output", output_file])
@@ -198,15 +184,16 @@ class NKILlamaHandler:
         return score, breakdown
         
     def calculate_combined_score(self, training_metrics: Dict[str, Any],
-                                 inference_metrics: Dict[str, Any],
+                                 inference_metrics: Optional[Dict[str, Any]] = None,
                                  weights: Optional[Dict[str, float]] = None,
                                  reference_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Calculate combined NKI-LLAMA score from training and inference metrics.
+        If inference metrics are not available, returns training-only score.
         
         Args:
             training_metrics: Training metrics including NKI analysis
-            inference_metrics: Inference benchmark results
+            inference_metrics: Optional inference benchmark results
             weights: Optional weights for combining scores
             reference_data: Optional reference implementation data for inference scoring
             
@@ -222,6 +209,22 @@ class NKILlamaHandler:
         # Get training score and NKI ratio
         training_score = training_metrics.get("training_score", 0.0)
         nki_ratio = training_metrics["nki_analysis"]["summary"]["overall_nki_ratio"]
+        
+        # Check if inference metrics are available
+        if inference_metrics is None:
+            # Training-only mode
+            return {
+                "combined_score": training_score,
+                "training_score": training_score,
+                "inference_score": None,
+                "weights": weights,
+                "mode": "training_only",
+                "breakdown": {
+                    "training": training_metrics.get("training_score_breakdown", {}),
+                    "inference": None
+                },
+                "nki_ratio": nki_ratio
+            }
         
         # Calculate inference score with NKI ratio
         inference_score, inference_breakdown = self.calculate_inference_score(inference_metrics, reference_data)
@@ -246,6 +249,7 @@ class NKILlamaHandler:
             "training_score": training_score,
             "inference_score": inference_score_with_nki,
             "weights": weights,
+            "mode": "combined",
             "breakdown": {
                 "training": training_metrics.get("training_score_breakdown", {}),
                 "inference": inference_breakdown
@@ -259,35 +263,56 @@ class NKILlamaHandler:
         print("NKI-LLAMA BENCHMARK RESULTS")
         print("="*70)
         
-        # Combined score
-        print(f"\n🏆 FINAL NKI-LLAMA SCORE: {results['combined_score']:.4f}")
-        print(f"\nScore Weights:")
-        print(f"  Training: {results['weights']['training']*100:.0f}%")
-        print(f"  Inference: {results['weights']['inference']*100:.0f}%")
-        
-        # Component scores
-        print(f"\n📊 Component Scores:")
-        print(f"  Training Score: {results['training_score']:.4f}")
-        print(f"  Inference Score: {results['inference_score']:.4f}")
-        print(f"  NKI Ratio: {results['nki_ratio']:.4f}")
-        
-        # Training breakdown
-        if "training" in results["breakdown"]:
-            tb = results["breakdown"]["training"]
-            print(f"\n🎯 Training Metrics:")
-            print(f"  MFU: {tb.get('achieved_mfu', 0):.2f}% (baseline: {tb.get('base_mfu', 0):.2f}%)")
-            print(f"  Throughput: {tb.get('achieved_throughput', 0):.2f} seq/s (baseline: {tb.get('base_throughput', 0):.2f})")
-            print(f"  MFU Improvement: {tb.get('mfu_improvement', 0):.4f}x")
-            print(f"  Throughput Improvement: {tb.get('throughput_improvement', 0):.4f}x")
+        # Check mode and display appropriate results
+        if results.get("mode") == "training_only":
+            print("\n⚠️  TRAINING-ONLY MODE (Inference results not available)")
+            print(f"\n🏆 NKI KERNEL TRAINING SCORE: {results['training_score']:.4f}")
+            print(f"   NKI Ratio: {results['nki_ratio']:.4f}")
             
-        # Inference breakdown
-        ib = results["breakdown"]["inference"]
-        print(f"\n⚡ Inference Metrics:")
-        print(f"  Latency: {ib['achieved_latency_ms']:.2f}ms (reference: {ib['reference_latency_ms']:.2f}ms)")
-        print(f"  Throughput: {ib['achieved_throughput']:.2f} tokens/s (reference: {ib['reference_throughput']:.2f})")
-        print(f"  Latency Reduction: {ib['reduced_latency']:.4f}x")
-        print(f"  Throughput Increase: {ib['increased_throughput']:.4f}x")
-        print(f"  Accuracy: {'✓ Passed' if ib['accuracy'] == 1.0 else '✗ Failed'}")
+            # Training breakdown
+            if "training" in results["breakdown"] and results["breakdown"]["training"]:
+                tb = results["breakdown"]["training"]
+                print(f"\n🎯 Training Metrics:")
+                print(f"  MFU: {tb.get('achieved_mfu', 0):.2f}% (baseline: {tb.get('base_mfu', 0):.2f}%)")
+                print(f"  Throughput: {tb.get('achieved_throughput', 0):.2f} seq/s (baseline: {tb.get('base_throughput', 0):.2f})")
+                print(f"  MFU Improvement: {tb.get('mfu_improvement', 0):.4f}x")
+                print(f"  Throughput Improvement: {tb.get('throughput_improvement', 0):.4f}x")
+                
+            print("\n💡 Note: This score represents training performance only.")
+            print("   To get the full NKI-LLAMA score, run inference benchmarks and provide")
+            print("   the results file using --inference-results option.")
+            
+        else:
+            # Combined mode - full results
+            print(f"\n🏆 FINAL NKI-LLAMA SCORE: {results['combined_score']:.4f}")
+            print(f"\nScore Weights:")
+            print(f"  Training: {results['weights']['training']*100:.0f}%")
+            print(f"  Inference: {results['weights']['inference']*100:.0f}%")
+            
+            # Component scores
+            print(f"\n📊 Component Scores:")
+            print(f"  Training Score: {results['training_score']:.4f}")
+            print(f"  Inference Score: {results['inference_score']:.4f}")
+            print(f"  NKI Ratio: {results['nki_ratio']:.4f}")
+            
+            # Training breakdown
+            if "training" in results["breakdown"] and results["breakdown"]["training"]:
+                tb = results["breakdown"]["training"]
+                print(f"\n🎯 Training Metrics:")
+                print(f"  MFU: {tb.get('achieved_mfu', 0):.2f}% (baseline: {tb.get('base_mfu', 0):.2f}%)")
+                print(f"  Throughput: {tb.get('achieved_throughput', 0):.2f} seq/s (baseline: {tb.get('base_throughput', 0):.2f})")
+                print(f"  MFU Improvement: {tb.get('mfu_improvement', 0):.4f}x")
+                print(f"  Throughput Improvement: {tb.get('throughput_improvement', 0):.4f}x")
+                
+            # Inference breakdown
+            if results["breakdown"]["inference"]:
+                ib = results["breakdown"]["inference"]
+                print(f"\n⚡ Inference Metrics:")
+                print(f"  Latency: {ib['achieved_latency_ms']:.2f}ms (reference: {ib['reference_latency_ms']:.2f}ms)")
+                print(f"  Throughput: {ib['achieved_throughput']:.2f} tokens/s (reference: {ib['reference_throughput']:.2f})")
+                print(f"  Latency Reduction: {ib['reduced_latency']:.4f}x")
+                print(f"  Throughput Increase: {ib['increased_throughput']:.4f}x")
+                print(f"  Accuracy: {'✓ Passed' if ib['accuracy'] == 1.0 else '✗ Failed'}")
         
         print("\n" + "="*70)
         
@@ -295,10 +320,11 @@ class NKILlamaHandler:
         """Save the combined results to a JSON file."""
         output_data = {
             "timestamp": datetime.now().isoformat(),
+            "mode": results.get("mode", "combined"),
             "nki_kernel_score": results["combined_score"],
             "component_scores": {
                 "training": results["training_score"],
-                "inference": results["inference_score"]
+                "inference": results.get("inference_score")
             },
             "weights": results["weights"],
             "nki_ratio": results["nki_ratio"],
@@ -362,7 +388,7 @@ def main():
     inference_group.add_argument(
         "--inference-results",
         default="benchmark_inference.json",
-        help="Path to inference benchmark results"
+        help="Path to inference benchmark results (optional - if not provided, only training score is calculated)"
     )
     inference_group.add_argument(
         "--reference-latency",
@@ -474,17 +500,24 @@ def main():
         else:
             training_metrics = handler.run_training_metrics(training_args)
             
-        # Step 2: Load inference metrics
-        print("\n⚡ Loading inference metrics...")
-        if not os.path.exists(args.inference_results):
-            handler.logger.error(f"Inference results file not found: {args.inference_results}")
-            sys.exit(1)
+        # Step 2: Check for inference metrics
+        inference_metrics = None
+        inference_available = os.path.exists(args.inference_results)
+        
+        if inference_available:
+            print("\n⚡ Loading inference metrics...")
+            with open(args.inference_results, 'r') as f:
+                inference_metrics = json.load(f)
+        else:
+            print("\n⚠️  Inference results file not found. Running in training-only mode.")
+            print(f"   (Looking for: {args.inference_results})")
             
-        with open(args.inference_results, 'r') as f:
-            inference_metrics = json.load(f)
+        # Step 3: Calculate score(s)
+        if inference_available:
+            print("\n🔬 Calculating combined NKI-LLAMA score...")
+        else:
+            print("\n🔬 Calculating NKI kernel training score...")
             
-        # Step 3: Calculate combined score
-        print("\n🔬 Calculating combined NKI-LLAMA score...")
         weights = {
             "training": args.training_weight,
             "inference": args.inference_weight
@@ -499,7 +532,7 @@ def main():
             "accuracy": 1.0  # Assuming accuracy threshold is met
         }
         
-        # Pass reference_data to calculate_combined_score
+        # Calculate score - will handle both training-only and combined modes
         results = handler.calculate_combined_score(
             training_metrics,
             inference_metrics,
@@ -513,7 +546,11 @@ def main():
         # Step 5: Save results
         handler.save_results(results, args.output)
         
-        print(f"\n✅ Benchmark complete! Results saved to {args.output}")
+        if inference_available:
+            print(f"\n✅ Benchmark complete! Results saved to {args.output}")
+        else:
+            print(f"\n✅ Training benchmark complete! Results saved to {args.output}")
+            print("   Run inference benchmarks to get the full NKI-LLAMA score.")
         
     except Exception as e:
         handler.logger.error(f"Error during benchmark: {e}")
