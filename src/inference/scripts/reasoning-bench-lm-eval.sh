@@ -43,6 +43,19 @@ pip install -U -r requirements/neuron.txt
 echo "Installing vLLM for Neuron..."
 VLLM_TARGET_DEVICE="neuron" pip install -e .
 
+# Ensure transformers < 4.50 (needed by Neuron hf_adapter)
+python - <<'PY'
+import subprocess, pkg_resources, sys
+req = "4.50.0"
+try:
+    ver = pkg_resources.get_distribution("transformers").version
+except pkg_resources.DistributionNotFound:
+    ver = ""
+if not ver or pkg_resources.parse_version(ver) >= pkg_resources.parse_version(req):
+    print("Installing transformers<%s …" % req)
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", f"transformers<{req}"])
+PY
+
 echo -e "${GREEN}✓ vLLM setup complete${NC}"
 
 cd "$HOME"
