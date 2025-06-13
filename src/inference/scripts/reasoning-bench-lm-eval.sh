@@ -120,7 +120,7 @@ test:
       timeout: 3600
       client_params:
         limit: 200
-        use_chat: True
+        use_chat: False
 YAML
 echo -e "${GREEN}✓ Config file written${NC}"
 
