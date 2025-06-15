@@ -22,7 +22,7 @@ NC='\033[0m'
 # Default parameters
 MODE="${MODE:-evaluate_single}"
 ENABLE_NKI="${ENABLE_NKI:-true}"
-SEQ_LEN="${SEQ_LEN:-640}"
+SEQ_LEN="${SEQ_LEN:-2048}"
 TP_DEGREE="${TP_DEGREE:-${TENSOR_PARALLEL_SIZE}}"
 CLEAR_CACHE="${CLEAR_CACHE:-false}"
 AUTO_CLEAR_CACHE="${AUTO_CLEAR_CACHE:-true}"
@@ -72,7 +72,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --mode MODE                    Benchmark mode (evaluate_single/evaluate_all) [default: evaluate_single]"
             echo "  --model-name NAME              Model name override"
             echo "  --no-nki                       Disable NKI optimizations"
-            echo "  --seq-len N                    Sequence length [default: 640]"
+            echo "  --seq-len N                    Sequence length [default: 2048]"
             echo "  --tp-degree N                  Tensor parallel degree [default: from config]"
             echo "  --clear-cache                  Clear compilation cache before running"
             echo "  --no-auto-clear-cache          Disable automatic cache clearing on failure"

@@ -1,4 +1,9 @@
+You're able to fun through the fine-tuning workflow with the top-level NKI LLAMA CLI or this fine-tune pipeline script.
+
 ## 1 · Prerequisites
+
+- Under the configs dir, make sure to bring your model specific config.json for NxD-training.
+- additionally ensure you bring your training config.YAML file, for more details, refer to the corresponding NXDT documentation.
 
 | Requirement | Reason | Install / Notes |
 |-------------|--------|-----------------|

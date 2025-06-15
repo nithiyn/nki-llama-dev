@@ -70,6 +70,7 @@ chmod +x install.sh
 # Configure
 cp .env.example .env
 nano .env  # Add your HF_TOKEN
+# inference env vars, ensure max_model_len= seq_len
 ```
 
 ### 3. First Run
@@ -122,7 +123,8 @@ source /opt/aws_neuronx_venv_pytorch_2_6/bin/activate
 # Step 2: Run inference benchmark (optional for full score)
 tmux new -s benchmark
 source /opt/aws_neuronx_venv_pytorch_2_6_nxd_inference/bin/activate
-./nki-llama inference benchmark
+./nki-llama inference benchmark 
+# or directly run from main.py in src/inference/ for full use of flags for bucketing/context encoding and others
 
 # Step 3: Calculate scores
 # For training-only score:
