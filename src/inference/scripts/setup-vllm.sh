@@ -35,7 +35,7 @@ else
 fi
 
 # Install requirements
-cd /home/vllm/
+cd /home/ubuntu/vllm/
 echo "Installing vLLM requirements..."
 pip install -U -r requirements/neuron.txt
 
