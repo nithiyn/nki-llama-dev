@@ -31,7 +31,7 @@ if [[ -d "$VLLM_REPO" ]]; then
 else
     echo "Cloning vLLM repository..."
     cd "$(dirname "$VLLM_REPO")"
-    git clone https://github.com/vllm-project/vllm.git
+    git clone -b releases/v2.23.0-v0 https://github.com/aws-neuron/upstreaming-to-vllm.git
 fi
 
 # ---- NEW: make sure no wheel shadows the editable install ---------------
@@ -41,7 +41,7 @@ pip uninstall -y vllm vllm-nightly vllm-neuron 2>/dev/null || true
 # Install requirements
 cd /home/ubuntu/vllm/
 echo "Installing vLLM requirements..."
-pip install -U -r requirements/neuron.txt
+pip install -r requirements/neuron.txt
 
 # Install vLLM
 echo "Installing vLLM for Neuron..."
