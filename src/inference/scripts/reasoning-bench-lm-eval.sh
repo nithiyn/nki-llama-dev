@@ -67,7 +67,7 @@ fi
 # ---------------------------------------------------------------------
 python - <<'PY'
 import subprocess, pkg_resources, sys
-req = "4.50.0"
+req = "4.48.2"
 try:
     ver = pkg_resources.get_distribution("transformers").version
 except pkg_resources.DistributionNotFound:
