@@ -47,7 +47,7 @@ python -m vllm.entrypoints.openai.api_server \
     --max-num-seqs="${MAX_NUM_SEQS}" \ 
     --max-model-len="${MAX_MODEL_LEN}" \
     --enable-reasoning \
-    --reasoning-parser deepseek-r1 \
+    --reasoning-parser deepseek_r1 \
     --tensor-parallel-size="${TENSOR_PARALLEL_SIZE}" \
     --port="${INFERENCE_PORT}" \
     --device="neuron" \

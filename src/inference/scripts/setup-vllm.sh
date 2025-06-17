@@ -34,6 +34,10 @@ else
     git clone https://github.com/vllm-project/vllm.git
 fi
 
+# ---- NEW: make sure no wheel shadows the editable install ---------------
+echo "Removing any previously installed vLLM wheels..."
+pip uninstall -y vllm vllm-nightly vllm-neuron 2>/dev/null || true
+
 # Install requirements
 cd /home/ubuntu/vllm/
 echo "Installing vLLM requirements..."
