@@ -40,11 +40,14 @@ echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
 echo
 
 # Start vLLM server
+#if using a reasoning model, make sure 
 cd "$HOME"
 python -m vllm.entrypoints.openai.api_server \
     --model="${NKI_MODELS}/${MODEL_NAME}" \
-    --max-num-seqs="${MAX_NUM_SEQS}" \
+    --max-num-seqs="${MAX_NUM_SEQS}" \ 
     --max-model-len="${MAX_MODEL_LEN}" \
+    --enable-reasoning \
+    --reasoning-parser deepseek-r1 \
     --tensor-parallel-size="${TENSOR_PARALLEL_SIZE}" \
     --port="${INFERENCE_PORT}" \
     --device="neuron" \

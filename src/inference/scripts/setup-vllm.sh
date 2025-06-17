@@ -35,7 +35,7 @@ else
 fi
 
 # Install requirements
-cd "$VLLM_REPO"
+cd /home/vllm/
 echo "Installing vLLM requirements..."
 pip install -U -r requirements/neuron.txt
 
