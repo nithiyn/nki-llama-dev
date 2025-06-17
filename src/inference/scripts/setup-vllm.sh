@@ -39,7 +39,7 @@ echo "Removing any previously installed vLLM wheels..."
 pip uninstall -y vllm vllm-nightly vllm-neuron 2>/dev/null || true
 
 # Install requirements
-cd /home/ubuntu/vllm/
+cd /home/ubuntu/upstreaming-to-vllm/
 echo "Installing vLLM requirements..."
 pip install -r requirements/neuron.txt
 
