@@ -31,7 +31,7 @@ if [[ -d "$VLLM_REPO" ]]; then
 else
     echo "Cloning vLLM repository..."
     cd "$(dirname "$VLLM_REPO")"
-    git clone -b releases/v2.23.0-v0 https://github.com/aws-neuron/upstreaming-to-vllm.git
+    git clone -b neuron-2.22-vllm-v0.7.2 https://github.com/aws-neuron/upstreaming-to-vllm.git
 fi
 
 # ---- NEW: make sure no wheel shadows the editable install ---------------
