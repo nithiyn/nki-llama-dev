@@ -26,7 +26,6 @@ fi
 if [[ -d "$VLLM_REPO" ]]; then
     echo "Updating existing vLLM repository..."
     cd "$VLLM_REPO"
-    git fetch
     git pull
 else
     echo "Cloning vLLM repository..."
@@ -41,7 +40,7 @@ pip uninstall -y vllm vllm-nightly vllm-neuron 2>/dev/null || true
 # Install requirements
 cd /home/ubuntu/upstreaming-to-vllm/
 echo "Installing vLLM requirements..."
-pip install -r requirements/neuron.txt
+pip install -r requirements-neuron.txt
 
 # Install vLLM
 echo "Installing vLLM for Neuron..."

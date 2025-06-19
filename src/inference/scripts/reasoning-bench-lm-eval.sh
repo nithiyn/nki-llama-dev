@@ -34,32 +34,11 @@ fi
 # 2. Clone or update vLLM repo
 # ---------------------------------------------------------------------
 if [[ -d "$VLLM_REPO" ]]; then
-  echo "Updating existing vLLM repo …"
-  git -C "$VLLM_REPO" pull --ff-only
+  echo " vLLM repo exists"
 else
-  echo "Cloning vLLM repo …"
-  git clone https://github.com/vllm-project/vllm.git "$VLLM_REPO"
-fi
-
-cd "$VLLM_REPO"
-
-# ---------------------------------------------------------------------
-# 3. Install dependencies once, refresh editable install each run
-#    • If 'vllm' importable  → skip deps, just refresh metadata
-#    • Else                 → first run: install deps + editable
-# ---------------------------------------------------------------------
-if python - <<'PY' >/dev/null 2>&1
-import importlib.util, sys
-sys.exit(0 if importlib.util.find_spec("vllm") else 1)
-PY
-then
-  echo "vLLM already importable – skipping heavy deps install"
-  VLLM_TARGET_DEVICE="neuron" \
-      pip install --quiet --no-deps -e . --exists-action=i
-else
-  echo "Installing vLLM Neuron deps (first run) …"
-  pip install --quiet -r requirements/neuron.txt
-  VLLM_TARGET_DEVICE="neuron" pip install --quiet -e .
+  echo "Run ./nki-llama inference setup first"
+  exit 1
+  #git clone -b neuron-2.22-vllm-v0.7.2 https://github.com/aws-neuron/upstreaming-to-vllm.git
 fi
 
 # ---------------------------------------------------------------------
