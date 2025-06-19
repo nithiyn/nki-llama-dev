@@ -7,8 +7,11 @@ set -euo pipefail
 # 0. Config + constants
 # ---------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../../../nki-llama.config"          # sets: VLLM_REPO, NEURON_INFERENCE_VENV, …
+source "${SCRIPT_DIR}/../../../nki-llama.config" 
 
+set -a                      # auto-export everything that follows
+[ -f "${SCRIPT_DIR}/../../../.env" ] && source "${SCRIPT_DIR}/../../../.env"
+set +a
 # Where we keep AWS Neuron samples
 REASONING_BENCH_DIR="$HOME/aws-neuron-samples"
 
