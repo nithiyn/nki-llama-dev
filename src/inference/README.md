@@ -236,12 +236,8 @@ MODEL_ID=meta-llama/Meta-Llama-3-8B
 MODEL_NAME=llama-3-8b
 HF_TOKEN=your_huggingface_token
 
-# Training Parameters
-BATCH_SIZE=1
-MAX_STEPS=1000
-SEQ_LENGTH=2048
+# Shared Parameters
 TENSOR_PARALLEL_SIZE=8
-LEARNING_RATE=5e-5
 
 # Inference Parameters
 INFERENCE_PORT=8080

@@ -40,6 +40,7 @@ echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
 echo
 
 # Start vLLM server
+#if using a reasoning model, make sure 
 cd "$HOME"
 python -m vllm.entrypoints.openai.api_server \
     --model="${NKI_MODELS}/${MODEL_NAME}" \
