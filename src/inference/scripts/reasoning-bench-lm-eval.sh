@@ -97,7 +97,7 @@ test:
   accuracy:
     mytest:
       client: "lm_eval"
-      datasets: ["gsm8k_cot", "mmlu_flan_n_shot_generative_logical_fallacies"]
+      datasets: ["mmlu_pro, gsm8k_cot, mmlu_flan_cot_zeroshot"]
       max_concurrent_requests: 1
       timeout: 3600
       client_params:
